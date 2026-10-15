@@ -1,15 +1,17 @@
 # Jans verkstad – mobilapp
 
-Öppna appen: https://NitroJohn2103.github.io/jans-verkstad-mobil/
+Öppna appen: https://nitrojohn2103.github.io/jans-verkstad-mobil/
 
-Mobilanpassat register över verktyg och förvaringsplatser. Foto kan tas med mobilens kamera eller väljas från bildbiblioteket. Sök på namn, sökord och plats.
+Mobilanpassat register över verktyg och förvaringsplatser. Ta ett foto med mobilen och sök på namn, sökord eller plats.
 
-## Viktigt om lagring
+## Lagring och säkerhetskopia
 
-All data, inklusive foton, lagras i webbläsaren på enheten. Den synkroniseras inte med andra telefoner och raderas om webbläsardata för webbplatsen rensas. Exportera en säkerhetskopia regelbundet och före telefonbyte. Använd Återställ från fil för att flytta registret till en annan enhet. Import ersätter det lokala registret.
+Alla uppgifter och foton sparas i webbläsaren på den enhet där appen används. Ingen synkronisering sker mellan enheter. Exportera regelbundet en säkerhetskopia och innan du byter telefon eller rensar webbläsardata. Återställning från fil ersätter registret på den aktuella enheten.
 
-Appen kan läggas på hemskärmen via webbläsarens meny. När den har laddats första gången kan den öppnas offline med service worker. Första besöket kräver uppkoppling.
+## Användning
 
-## Utveckling
+Öppna länken i mobilens webbläsare. Lägg den på hemskärmen via webbläsarens delningsmeny. Första besöket kräver internet; appen kan därefter användas offline när dess filer har lagrats.
 
-Källkod finns i `src/`. Installera Node.js 22.13 eller senare. Kör `npm install`, därefter `npm run build`. GitHub Pages publicerar innehållet i `dist/` från `main`-grenen. `dist/` är byggda filer och ligger i repot för enkel publicering. Kör om bygget efter källkodsändringar och lägg upp både källkod och ändrade dist-filer.
+## Källkod
+
+Källkoden finns i [source-code.zip](./source-code.zip). Packa upp den, installera Node.js 22.13 eller senare och kör `npm install` samt `npm run build`. GitHub Pages serverar de byggda filerna direkt från repots rot på grenen `main`.
