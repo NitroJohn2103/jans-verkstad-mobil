@@ -29,6 +29,22 @@
 
 .toolbar .tabs{display:flex;flex-wrap:nowrap;width:100%;max-width:100%;overflow-x:auto}.toolbar .tabs button{flex:1 0 auto;min-height:44px}.top .back{color:var(--forest)}#homeSync{display:block;width:100%;text-align:left;margin:0 0 16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--forest);font-size:13px;line-height:1.5}#homeSync[data-warning="true"]{color:#854919;background:#fff8eb;border-color:#e3c89e}
 @media(max-width:650px){.toolbar .tabs button{font-size:12px;padding:11px 8px}}
+
+#detailModel{margin:-8px 0 20px;color:var(--forest2);font-size:18px;font-weight:750;overflow-wrap:anywhere}
+#detail .detail-head>div{min-width:0}#detailName{overflow-wrap:anywhere}#detail .x{flex-shrink:0}
+#detail.machine-detail{width:min(95vw,680px)}
+.machine-detail .detail-media{height:clamp(220px,45vh,420px);position:relative}
+.detail-empty-photo{position:absolute;bottom:20px;color:var(--muted);font-size:14px}
+.machine-detail #detailManual,.machine-detail #detailRelated{border:1px solid var(--line);border-radius:14px;padding:18px;margin:20px 0;background:#f8faf6}
+.machine-detail h3{margin:0 0 10px;font-size:18px}
+.machine-detail #detailManual p,.machine-detail #detailRelated p{font-size:14px;line-height:1.5;color:var(--muted);margin:0 0 14px}
+.machine-detail .manual-link{margin:0;min-height:44px;align-items:center}
+.accessory-list{display:grid;gap:10px;margin-bottom:14px}.accessory-list:empty{display:none}
+.accessory-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px;border:1px solid var(--line);border-radius:12px;background:white;color:var(--ink)}
+.accessory-photo{width:64px;height:64px;flex-shrink:0;display:grid;place-items:center;overflow:hidden;background:#edf1ea;border-radius:8px}
+.accessory-photo img{width:100%;height:100%;object-fit:contain}.accessory-photo .placeholder{font-size:32px}
+.accessory-label{min-width:0;flex:1;overflow-wrap:anywhere}.accessory-label strong{display:block;font-size:15px;line-height:1.4}.accessory-label>span{display:block;color:var(--muted);font-size:13px;margin-top:5px}.accessory-arrow{font-size:22px;color:var(--forest)}
+@media(max-width:650px){#detail.machine-detail{padding:18px}.machine-detail #detailManual,.machine-detail #detailRelated{padding:14px}.machine-detail .button{min-height:44px}}
 #cloudPanel summary{cursor:pointer;font-weight:700;padding:12px 0;min-height:44px}#cloudPanel .cloud-form{display:grid;gap:14px;margin:15px 0}#cloudPanel .cloud-note{margin-top:22px}#cloudPanel small{display:block;color:var(--muted);margin-top:16px}.cloud-conflict{border:1px solid var(--line);border-radius:12px;padding:14px;margin:18px 0;min-width:0}.cloud-conflict legend{font-weight:700}.cloud-conflict label,.cloud-check{display:flex;align-items:center;gap:10px;padding:12px 0;line-height:1.5}.cloud-conflict input,.cloud-check input{min-width:22px;min-height:22px}.cloud-conflict img{max-width:100%;max-height:180px;object-fit:contain}.cloud-conflict p,.cloud-address{overflow-wrap:anywhere}#cloudReview>button{margin:8px 8px 8px 0}#cloudStatus{font-weight:650}#cloudPanel [hidden]{display:none!important}</style>
 
 </head>
@@ -100,7 +116,7 @@
 <p class="cloud-note">Synken använder det lokala registret, aldrig en förhandsvisad säkerhetskopia. Använd denna Festool-version på alla enheter. Ändringar och borttagningar kan föras vidare till molnet och andra anslutna enheter.</p>
 <div class="data-buttons"><button class="button secondary" id="cloudBackup" type="button">Säkerhetskopiera registret</button><button class="button secondary" id="cloudSafety" type="button">Exportera kopian före överföringen</button></div>
 </details>
-<small>Festool 3.9 · enklare uppdatering</small>
+<small>Festool 3.10 · tydligare maskinsidor</small>
 </section>
 
   <section class="data-panel" id="backup" aria-label="Säkerhetskopiering"><h3>Skydda ditt register</h3><p>Ditt register sparas på denna enhet. Om du aktiverar molnsynk sparas det också i ditt molnkonto. Exportera regelbundet en säkerhetskopia med bilder till iCloud Drive, särskilt före större ändringar.</p><div class="data-buttons"><button id="restoreFile" class="button secondary">⇧ Importera säkerhetskopia</button><input id="restoreInput" type="file" accept="application/json,.json" hidden><button id="refresh" class="button secondary">↻ Läs om registret</button><button class="button primary" id="exportBackup">↓ Säkerhetskopiera</button><button class="button secondary" id="loadFile">Förhandsvisa kopia</button><input id="file" type="file" accept="application/json,.json" hidden></div></section>
@@ -108,7 +124,7 @@
   <aside class="help"><div class="help-icon">ⓘ</div><div><strong>Så fungerar Jans verkstad.</strong><p>Registrera föremål, sök efter dem, öppna en förvaringsplats för att se fotografierna eller bläddra i din Festool-samling. Registret sparas på denna enhet. Molnsynk är valfri och aktiveras efter att du har kontrollerat registren. Öppna samma Festool-version och logga in med samma konto på andra enheter. Fortsätt säkerhetskopiera med bilder till iCloud Drive.</p></div></aside>
  </main><footer>JANS VERKSTAD <span>Lite mer ordning. Lite mer arbetsro.</span></footer>
 </div>
-<dialog id="detail"><div class="detail-head"><div><small id="detailCat"></small><h2 id="detailName"></h2></div><button id="closeDetail" class="x" aria-label="Stäng">×</button></div><div class="detail-media" id="detailMedia"></div><div class="detail-location"><small>PLACERING</small><b id="detailLocation"></b></div><dl id="detailFacts"></dl><div id="detailManual"></div><div id="detailRelated"></div><div class="detail-actions"><button id="editItem" class="button primary">Redigera</button><button id="showLocation" class="button secondary">Visa hela lådan →</button><button id="deleteItem" class="button danger">Ta bort</button><button id="closeDetailBottom" class="button secondary">Stäng</button></div></dialog>
+<dialog id="detail"><div class="detail-head"><div><small id="detailCat"></small><h2 id="detailName"></h2><p id="detailModel" hidden></p></div><button id="closeDetail" class="x" aria-label="Stäng">×</button></div><div class="detail-media" id="detailMedia"></div><div class="detail-location"><small>PLACERING</small><b id="detailLocation"></b></div><dl id="detailFacts"></dl><div id="detailManual"></div><div id="detailRelated"></div><div class="detail-actions"><button id="editItem" class="button primary">Redigera</button><button id="showLocation" class="button secondary">Visa hela lådan →</button><button id="deleteItem" class="button danger">Ta bort</button><button id="closeDetailBottom" class="button secondary">Stäng</button></div></dialog>
 <dialog id="itemEditor" class="form-dialog"><div class="detail-head"><div><small>MITT REGISTER</small><h2 id="formTitle">Nytt föremål</h2></div><button class="x" type="button" id="closeEditor" aria-label="Stäng">×</button></div>
 <form id="itemForm"><label class="field">Namn *<input id="fName" maxlength="200" required placeholder="Till exempel: Hylsnyckelsats"></label><div class="field-row"><label class="field">Kategori<select id="fCategory"><option>Handverktyg</option><option>Elverktyg</option><option>Tillbehör</option><option>Material</option><option>Förbrukning</option><option>Övrigt</option></select></label><label class="field">Antal *<input id="fQuantity" inputmode="numeric" type="number" min="1" max="1000000" step="1" value="1" required></label></div><label class="field">Förvaringsplats *<select id="fLocationChoice" required></select></label><div id="newLocationField" hidden><label class="field">Namn på ny förvaringsplats *<input id="fLocation" maxlength="200" placeholder="Till exempel: Trälåda 3" disabled></label></div><div class="field"><label class="field">Fabrikat<input id="fBrand" list="brandSuggestions" maxlength="80" placeholder="Festool, Bosch, Makita ..."><datalist id="brandSuggestions"><option value="Festool"></option><option value="Teng Tools"></option><option value="Stanley"></option></datalist></label><small class="field-hint">Fabrikat är frivilligt. Välj Festool för att visa föremålet i din Festool-samling.</small></div><div id="advancedBrandFields" class="festool-fields" hidden><strong>Maskin & tillbehör</strong><div class="field-row half"><label class="field">Modell<input id="fModel" maxlength="120" placeholder="TS 55 EBQ"></label><label class="field">Typ<select id="fItemType"><option value="">Välj typ</option><option>Maskin</option><option>Tillbehör</option><option>Systainer</option><option>Förbrukning</option><option>Övrigt</option></select></label></div><label class="field">Passar till (modeller)<input id="fFitsTo" maxlength="400" placeholder="TS 55 EBQ, KS 60"><small class="field-hint">Använd kommatecken mellan modellerna för att koppla tillbehör till maskiner.</small></label><label class="field">Systainer / förvaring<input id="fSystainer" maxlength="200" placeholder="Till exempel: Systainer T-LOC 3"></label><div class="field-row half"><label class="field">Serienummer<input id="fSerial" maxlength="120" placeholder="Frivilligt"></label><label class="field">Inköpsår<input id="fYear" inputmode="numeric" maxlength="4" placeholder="Till exempel: 2018"></label></div><label class="field">Manual (webbadress)<input id="fManualUrl" type="url" maxlength="1000" placeholder="https://..."></label><label class="field">Service / underhåll<textarea id="fService" rows="2" maxlength="5000" placeholder="Servicedatum, reservdelar, anteckningar..."></textarea></label></div><label class="field">Sökord<input id="fKeywords" placeholder="Till exempel: hylsor, Teng Tools"></label><label class="field">Anteckningar<textarea id="fNotes" rows="3" placeholder="Till exempel: 1 förpackning med 50 blad"></textarea></label><div class="field"><span>Fotografi</span><div id="photoPreview" class="photo-preview">Inget foto valt</div><div class="data-buttons"><label class="button secondary pick-file">Välj eller ta foto<input id="photoInput" type="file" accept="image/*"></label><button class="button secondary" type="button" id="removePhoto">Ta bort foto</button></div></div><div class="editor-actions"><button class="button secondary" type="button" id="cancelEditor">Avbryt</button><button class="button primary" type="submit" id="saveItem">Spara föremål</button></div></form></dialog>
 <dialog id="placeEditor" class="form-dialog"><div class="detail-head"><div><small>FÖRVARINGSPLATSER</small><h2 id="placeFormTitle">Ny förvaringsplats</h2></div><button class="x" type="button" id="closePlaceEditor" aria-label="Stäng">×</button></div><form id="placeForm"><label class="field">Namn på låda, hylla eller skåp *<input id="pName" maxlength="200" required placeholder="Till exempel: Plåtlåda 3"></label><div class="editor-actions"><button class="button secondary" type="button" id="cancelPlaceEditor">Avbryt</button><button class="button primary" type="submit">Spara plats</button></div></form></dialog>
@@ -192,7 +208,50 @@ function render(){const allPlaces=placesAll();$('statItems').textContent=state.i
  $('sectionTitle').textContent='Alla föremål';$('sectionSub').textContent='Sök bland verktyg, material och förvaringsplatser.';drawCategories();const filtered=state.items.filter(matchItem);$('resultsCount').textContent=filtered.length+' av '+state.items.length+' föremål';drawItems(filtered);
 }
 function safeManual(value){if(!value)return '';try{const url=new URL(value);return ['https:','http:'].includes(url.protocol)?url.href:'';}catch{return '';}}
-function openDetail(item){state.selected=item;$('detailCat').textContent=item.category||'Föremål';$('detailName').textContent=item.name;$('detailLocation').textContent=item.location;const media=$('detailMedia');media.replaceChildren();addImg(media,item);const facts=$('detailFacts');facts.replaceChildren();function fact(name,value){if(!value)return;facts.append(text('dt',name),text('dd',String(value)));}fact('Antal',String(item.quantity||1)+' st');fact('Fabrikat',item.brand||(isFestool(item)?'Festool':''));fact('Modell',item.model);fact('Typ',item.itemType);fact('Passar till',item.fitsTo);fact('Systainer',item.systainer);fact('Serienummer',item.serial);fact('Inköpsår',item.year);fact('Service / underhåll',item.service);fact('Sökord',item.keywords);fact('Anteckningar',item.notes);const manuals=$('detailManual'),related=$('detailRelated');manuals.replaceChildren();related.replaceChildren();const url=safeManual(item.manualUrl);if(url){const a=text('a','↗ Öppna manual','manual-link');a.href=url;a.target='_blank';a.rel='noopener noreferrer';manuals.append(a);}if(isFestool(item)&&festoolKind(item)==='Maskin'){const links=relatedAccessories(item);if(links.length){const wrapper=el('div','related');wrapper.append(text('strong','Tillbehör som passar denna maskin'));const row=el('div','related-list');for(const rel of links){const b=text('button',rel.name);b.type='button';b.addEventListener('click',()=>{closeDetail();openDetail(rel);});row.append(b);}wrapper.append(row);related.append(wrapper);}}$('editItem').disabled=state.readonly;$('deleteItem').disabled=state.readonly;$('detail').showModal();}
+function openDetail(item){
+ state.selected=item;
+ const machine=isFestool(item)&&festoolKind(item)==='Maskin';
+ $('detail').classList.toggle('machine-detail',machine);
+ $('detail').setAttribute('aria-labelledby','detailName');
+ $('detailCat').textContent=machine?'Festool · Maskin':item.category||'Föremål';
+ $('detailName').textContent=item.name;
+ $('detailModel').hidden=!machine;
+ $('detailModel').textContent=machine?(item.model||'Modell inte angiven'):'';
+ $('detailLocation').textContent=item.location||'Ingen placering angiven';
+ const media=$('detailMedia');media.replaceChildren();addImg(media,item);
+ if(machine&&!imageFor(item))media.append(text('span','Ingen bild ännu','detail-empty-photo'));
+ const facts=$('detailFacts');facts.replaceChildren();
+ function fact(name,value){if(!value)return;facts.append(text('dt',name),text('dd',String(value)));}
+ fact('Antal',String(item.quantity||1)+' st');fact('Fabrikat',item.brand||(isFestool(item)?'Festool':''));
+ if(!machine)fact('Modell',item.model);
+ fact('Typ',item.itemType);fact('Passar till',item.fitsTo);fact('Systainer',item.systainer);fact('Serienummer',item.serial);fact('Inköpsår',item.year);fact('Service / underhåll',item.service);fact('Sökord',item.keywords);fact('Anteckningar',item.notes);
+ const manuals=$('detailManual'),related=$('detailRelated');manuals.replaceChildren();related.replaceChildren();
+ const url=safeManual(item.manualUrl);
+ if(machine)manuals.append(text('h3','Manual'));
+ if(url){const a=text('a','Öppna manual ↗','manual-link');a.href=url;a.target='_blank';a.rel='noopener noreferrer';manuals.append(a);}
+ else if(machine){
+  manuals.append(text('p','Ingen manual har lagts till.'));
+  if(!state.readonly){const b=text('button','Lägg till manuallänk','button secondary');b.type='button';b.addEventListener('click',()=>{closeDetail();startItem(item);$('fManualUrl').focus();});manuals.append(b);}
+ }
+ if(machine){
+  const links=relatedAccessories(item);
+  related.append(text('h3','Registrerade tillbehör ('+links.length+')'));
+  related.append(text('p',links.length?'Kopplade via fältet ”Passar till”. Tryck för att se bild och placering.':'Inga tillbehör är kopplade till denna maskin ännu.'));
+  const row=el('div','accessory-list');
+  for(const rel of links){
+   const b=el('button','accessory-card');b.type='button';
+   const photo=el('span','accessory-photo');addImg(photo,rel);b.append(photo);
+   const label=el('span','accessory-label');label.append(text('strong',rel.name),text('span',rel.location||'Ingen placering angiven'));b.append(label,text('span','→','accessory-arrow'));
+   b.addEventListener('click',()=>{closeDetail();openDetail(rel);});row.append(b);
+  }
+  related.append(row);
+  if(!state.readonly){
+   const add=text('button','+ Registrera tillbehör','button secondary');add.type='button';add.id='addMachineAccessory';
+   add.addEventListener('click',()=>{closeDetail();startItem(null,'Festool');$('fItemType').value='Tillbehör';$('fCategory').value='Tillbehör';$('fFitsTo').value=item.model||item.name;prepareLocationChoice(item.location||'');syncBrandFields();$('fName').focus();});related.append(add);
+  }
+ }
+ $('editItem').disabled=state.readonly;$('deleteItem').disabled=state.readonly;$('detail').showModal();
+}
 function closeDetail(){if($('detail').open)$('detail').close();}
 $('tabPlaces').addEventListener('click',()=>setTab('places'));
 $('tabItems').addEventListener('click',()=>setTab('items'));$('tabFestool').addEventListener('click',()=>setTab('festool'));$('festoolEntry').addEventListener('click',()=>setTab('festool'));
