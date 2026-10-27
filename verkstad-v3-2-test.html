@@ -55,6 +55,60 @@
 /* Jan Johanssons hantverkslogotyp */
 .logo-icon{background:transparent;color:inherit;border-radius:50%;overflow:hidden;flex-shrink:0}
 .logo-icon img{display:block;width:100%;height:100%;object-fit:contain}
+
+/* Registerlista: read-only list, searchable and printable */
+#registerPanel[hidden],#content[hidden],#resultsCount[hidden]{display:none!important}
+.register-panel{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px;margin:10px 0 25px;min-width:0}
+.register-tools{display:grid;grid-template-columns:minmax(135px,1fr) minmax(165px,1fr) minmax(160px,1.3fr);gap:12px}
+.register-tools label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:750;color:var(--forest)}
+.register-tools select,.register-tools input{box-sizing:border-box;width:100%;min-height:46px;padding:10px 12px;border:1px solid #cbd9cd;border-radius:10px;background:white;color:var(--ink);font-size:15px}
+.register-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:22px 0 12px;flex-wrap:wrap}
+#registerSummary{color:#50695a;font-size:13px;font-weight:700}
+.register-table-wrap{overflow-x:auto}
+.register-table,.register-print-table{width:100%;border-collapse:collapse;border-spacing:0;table-layout:fixed}
+.register-table th,.register-table td{padding:12px 10px;border-bottom:1px solid #e1e7de;text-align:left;vertical-align:top;font-size:13px;overflow-wrap:anywhere;white-space:normal}
+.register-table thead{background:#edf3eb}
+.register-table th{font-size:12px;letter-spacing:.2px;color:var(--forest)}
+.register-table th:first-child,.register-table td:first-child{width:35%;font-weight:650}
+.register-table th:nth-child(2),.register-table td:nth-child(2){width:19%}
+.register-table th:nth-child(3),.register-table td:nth-child(3){width:36%}
+.register-table tr:nth-child(even){background:#f9faf7}
+.register-table .register-number,.register-print-table .register-number{text-align:right;width:10%;font-variant-numeric:tabular-nums}
+.register-tip{font-size:12px;color:var(--muted);line-height:1.55;margin:14px 0 0}
+#registerPrint{display:none}
+@media(max-width:650px){
+ .register-panel{padding:13px 11px}
+ .register-tools{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .register-tools label:last-child{grid-column:1/-1}
+ .register-actions{align-items:stretch}
+ .register-actions .button{width:100%}
+ .register-table th,.register-table td{padding:12px 7px;font-size:12px}
+ .register-table th:first-child,.register-table td:first-child{width:44%}
+ .register-table th:nth-child(3),.register-table td:nth-child(3){width:43%}
+ .register-table .register-category{display:none}
+ .register-table .register-number{width:13%}
+}
+@page{size:A4 portrait;margin:17mm 13mm 18mm}
+@media print{
+ html,body{height:auto!important;background:white!important;color:#171717!important;margin:0!important;padding:0!important}
+ body>.shell,body>dialog{display:none!important}
+ #registerPrint{display:block!important;max-width:none!important;width:100%!important;margin:0!important;padding:0!important;font:10pt Arial,Helvetica,sans-serif!important;box-shadow:none!important;color:#161616!important}
+ .register-print-header{display:flex;gap:13px;align-items:center;padding-bottom:12px;border-bottom:2px solid #2c4337;break-after:avoid}
+ .register-print-header img{height:53px;width:53px;object-fit:contain}
+ .register-print-header h1{font:bold 19pt Georgia,serif;margin:0 0 3px}
+ .register-print-subtitle{font-size:10pt;margin:0;color:#494949}
+ #registerPrintMeta{margin:12px 0 14px;font-size:9pt;color:#444;break-after:avoid}
+ .register-print-table{table-layout:fixed;width:100%;border-collapse:collapse;font-size:9pt}
+ .register-print-table thead{display:table-header-group}
+ .register-print-table th,.register-print-table td{padding:6px 7px;border-bottom:1px solid #ccc;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+ .register-print-table th{font-weight:bold;border-bottom:2px solid #333;background:#ededed!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .register-print-table tr{break-inside:avoid;page-break-inside:avoid}
+ .register-print-table th:first-child,.register-print-table td:first-child{width:35%}
+ .register-print-table th:nth-child(2),.register-print-table td:nth-child(2){width:20%}
+ .register-print-table th:nth-child(3),.register-print-table td:nth-child(3){width:35%}
+ .register-print-table .register-number{width:10%;text-align:right}
+ #registerPrintFooter{font-size:8pt;margin:13px 0 0;color:#555}
+}
 </style>
 
 </head>
@@ -69,11 +123,43 @@
   <button id="festoolEntry" type="button" class="festool-entry" aria-label="Öppna Min Festool-samling"><span class="festool-logo">F</span><span style="flex:1"><small>EN EGEN PLATS FÖR ETT FAVORITFABRIKAT</small><strong>Min Festool-samling</strong><small>Maskiner, tillbehör, Systainers och manualer</small></span><span class="go" aria-hidden="true">→</span></button>
   <section class="workspace">
    <div class="workhead"><div><p class="eyebrow">UTFORSKA VERKSTADEN</p><h2 id="sectionTitle">Mina förvaringsplatser</h2><p id="sectionSub">Varje låda och skåp har sitt eget bildgalleri.</p></div></div>
-   <div class="toolbar"><nav class="tabs" aria-label="Välj vy"><button id="tabPlaces" aria-pressed="true">Förvaringsplatser</button><button id="tabItems" aria-pressed="false">Alla föremål</button><button id="tabFestool" class="festool-tab" aria-pressed="false">Festool</button></nav></div>
+   <div class="toolbar"><nav class="tabs" aria-label="Välj vy"><button id="tabPlaces" aria-pressed="true">Förvaringsplatser</button><button id="tabItems" aria-pressed="false">Alla föremål</button><button id="tabFestool" class="festool-tab" aria-pressed="false">Festool</button><button id="tabRegister" aria-pressed="false">Registerlista</button></nav></div>
    <div id="context" class="context" hidden></div><div id="placeResults" class="place-results" hidden></div>
    <div id="festoolPanel" hidden></div><div id="categoryFilters" class="category-filters" hidden></div>
    <div id="resultsCount" class="results-count" aria-live="polite"></div>
    <div id="content" class="content"></div>
+
+   <section id="registerPanel" class="register-panel" hidden aria-label="Registerlista utan bilder">
+     <div class="register-tools">
+       <label>Visa
+         <select id="registerScope" aria-label="Välj vilka föremål som ska visas">
+           <option value="all">Alla föremål</option>
+           <option value="festool">Endast Festool</option>
+         </select>
+       </label>
+       <label>Sortera
+         <select id="registerSort" aria-label="Sortera registerlistan">
+           <option value="name">Namn A–Ö</option>
+           <option value="place">Förvaringsplats A–Ö</option>
+           <option value="category">Kategori A–Ö</option>
+         </select>
+       </label>
+       <label>Sök i listan
+         <input type="search" id="registerSearch" placeholder="Namn, kategori eller plats…" autocomplete="off">
+       </label>
+     </div>
+     <div class="register-actions">
+       <span id="registerSummary" aria-live="polite"></span>
+       <button id="registerPrintButton" class="button primary" type="button">⎙ Skriv ut / Spara som PDF</button>
+     </div>
+     <div class="register-table-wrap">
+       <table class="register-table" aria-label="Föremål, kategori, förvaringsplats och antal">
+         <thead><tr><th scope="col">Föremål</th><th scope="col" class="register-category">Kategori</th><th scope="col">Plats</th><th scope="col" class="register-number">Antal</th></tr></thead>
+         <tbody id="registerRows"></tbody>
+       </table>
+     </div>
+     <p class="register-tip">Listan läser det aktuella registret och ändrar inga uppgifter. Välj vad som ska visas och tryck Skriv ut för A4 eller PDF.</p>
+   </section>
   </section>
   <details id="workshopSettings"><summary>Konto, molnsynk och säkerhetskopior</summary>
   <section class="data-panel" aria-label="Appversion"><h3>Uppdatera appen</h3><p>Hämta senaste versionen. Sparade föremål, bilder och inloggning behålls.</p><button id="updateApp" type="button" class="button secondary">↻ Uppdatera appen</button><p id="updateAppStatus" role="status" aria-live="polite"></p></section>
@@ -126,7 +212,7 @@
 <p class="cloud-note">Synken använder det lokala registret, aldrig en förhandsvisad säkerhetskopia. Använd denna Festool-version på alla enheter. Ändringar och borttagningar kan föras vidare till molnet och andra anslutna enheter.</p>
 <div class="data-buttons"><button class="button secondary" id="cloudBackup" type="button">Säkerhetskopiera registret</button><button class="button secondary" id="cloudSafety" type="button">Exportera kopian före överföringen</button></div>
 </details>
-<small>Festool 3.10 · tydligare maskinsidor</small>
+<small>Festool 3.11 · registerlista och utskrift</small>
 </section>
 
   <section class="data-panel" id="backup" aria-label="Säkerhetskopiering"><h3>Skydda ditt register</h3><p>Ditt register sparas på denna enhet. Om du aktiverar molnsynk sparas det också i ditt molnkonto. Exportera regelbundet en säkerhetskopia med bilder till iCloud Drive, särskilt före större ändringar.</p><div class="data-buttons"><button id="restoreFile" class="button secondary">⇧ Importera säkerhetskopia</button><input id="restoreInput" type="file" accept="application/json,.json" hidden><button id="refresh" class="button secondary">↻ Läs om registret</button><button class="button primary" id="exportBackup">↓ Säkerhetskopiera</button><button class="button secondary" id="loadFile">Förhandsvisa kopia</button><input id="file" type="file" accept="application/json,.json" hidden></div></section>
@@ -138,6 +224,19 @@
 <dialog id="itemEditor" class="form-dialog"><div class="detail-head"><div><small>MITT REGISTER</small><h2 id="formTitle">Nytt föremål</h2></div><button class="x" type="button" id="closeEditor" aria-label="Stäng">×</button></div>
 <form id="itemForm"><label class="field">Namn *<input id="fName" maxlength="200" required placeholder="Till exempel: Hylsnyckelsats"></label><div class="field-row"><label class="field">Kategori<select id="fCategory"><option>Handverktyg</option><option>Elverktyg</option><option>Tillbehör</option><option>Material</option><option>Förbrukning</option><option>Övrigt</option></select></label><label class="field">Antal *<input id="fQuantity" inputmode="numeric" type="number" min="1" max="1000000" step="1" value="1" required></label></div><label class="field">Förvaringsplats *<select id="fLocationChoice" required></select></label><div id="newLocationField" hidden><label class="field">Namn på ny förvaringsplats *<input id="fLocation" maxlength="200" placeholder="Till exempel: Trälåda 3" disabled></label></div><div class="field"><label class="field">Fabrikat<input id="fBrand" list="brandSuggestions" maxlength="80" placeholder="Festool, Bosch, Makita ..."><datalist id="brandSuggestions"><option value="Festool"></option><option value="Teng Tools"></option><option value="Stanley"></option></datalist></label><small class="field-hint">Fabrikat är frivilligt. Välj Festool för att visa föremålet i din Festool-samling.</small></div><div id="advancedBrandFields" class="festool-fields" hidden><strong>Maskin & tillbehör</strong><div class="field-row half"><label class="field">Modell<input id="fModel" maxlength="120" placeholder="TS 55 EBQ"></label><label class="field">Typ<select id="fItemType"><option value="">Välj typ</option><option>Maskin</option><option>Tillbehör</option><option>Systainer</option><option>Förbrukning</option><option>Övrigt</option></select></label></div><label class="field">Passar till (modeller)<input id="fFitsTo" maxlength="400" placeholder="TS 55 EBQ, KS 60"><small class="field-hint">Använd kommatecken mellan modellerna för att koppla tillbehör till maskiner.</small></label><label class="field">Systainer / förvaring<input id="fSystainer" maxlength="200" placeholder="Till exempel: Systainer T-LOC 3"></label><div class="field-row half"><label class="field">Serienummer<input id="fSerial" maxlength="120" placeholder="Frivilligt"></label><label class="field">Inköpsår<input id="fYear" inputmode="numeric" maxlength="4" placeholder="Till exempel: 2018"></label></div><label class="field">Manual (webbadress)<input id="fManualUrl" type="url" maxlength="1000" placeholder="https://..."></label><label class="field">Service / underhåll<textarea id="fService" rows="2" maxlength="5000" placeholder="Servicedatum, reservdelar, anteckningar..."></textarea></label></div><label class="field">Sökord<input id="fKeywords" placeholder="Till exempel: hylsor, Teng Tools"></label><label class="field">Anteckningar<textarea id="fNotes" rows="3" placeholder="Till exempel: 1 förpackning med 50 blad"></textarea></label><div class="field"><span>Fotografi</span><div id="photoPreview" class="photo-preview">Inget foto valt</div><div class="data-buttons"><label class="button secondary pick-file">Välj eller ta foto<input id="photoInput" type="file" accept="image/*"></label><button class="button secondary" type="button" id="removePhoto">Ta bort foto</button></div></div><div class="editor-actions"><button class="button secondary" type="button" id="cancelEditor">Avbryt</button><button class="button primary" type="submit" id="saveItem">Spara föremål</button></div></form></dialog>
 <dialog id="placeEditor" class="form-dialog"><div class="detail-head"><div><small>FÖRVARINGSPLATSER</small><h2 id="placeFormTitle">Ny förvaringsplats</h2></div><button class="x" type="button" id="closePlaceEditor" aria-label="Stäng">×</button></div><form id="placeForm"><label class="field">Namn på låda, hylla eller skåp *<input id="pName" maxlength="200" required placeholder="Till exempel: Plåtlåda 3"></label><div class="editor-actions"><button class="button secondary" type="button" id="cancelPlaceEditor">Avbryt</button><button class="button primary" type="submit">Spara plats</button></div></form></dialog>
+
+<section id="registerPrint" aria-label="Utskriftsvänlig registerlista">
+ <header class="register-print-header">
+   <img src="./jans-hantverk-256.png" alt="Hantverk av Jan Johansson" width="65" height="65">
+   <div><h1>Jans verkstad</h1><p class="register-print-subtitle">Registerlista – föremål och förvaringsplatser</p></div>
+ </header>
+ <p id="registerPrintMeta"></p>
+ <table class="register-print-table">
+   <thead><tr><th scope="col">Föremål</th><th scope="col">Kategori</th><th scope="col">Plats</th><th scope="col" class="register-number">Antal</th></tr></thead>
+   <tbody id="registerPrintRows"></tbody>
+ </table>
+ <p id="registerPrintFooter"></p>
+</section>
 <script>
 'use strict';
 // Jans verkstad. Behall IndexedDB-databasens namn for bakatkompatibilitet och bevarad lokal data.
@@ -189,7 +288,7 @@ async function readFromDevice(){
  }
 }
 async function openFile(file){if(!file)return;try{if(file.size>150*1024*1024)throw new Error('Filen är större än 150 MB.');const o=JSON.parse(await file.text());if(o.format!=='jans-verkstad'||o.version!==1||!Array.isArray(o.items)||!Array.isArray(o.places))throw new Error('Filen är inte en giltig säkerhetskopia från Jans verkstad.');setSource(o.items,o.places,'Säkerhetskopia: '+file.name,true);setStatus('Förhandsvisar säkerhetskopian '+file.name+' · inget har importerats',true);}catch(e){alert('Kunde inte läsa filen: '+e.message);}}
-function setTab(t){state.tab=t;state.location='';state.category='Alla';state.festoolFilter='Alla';state.query='';$('search').value='';render();if(t==='festool')document.querySelector('.workspace').scrollIntoView({behavior:'smooth',block:'start'});}
+function setTab(t){state.tab=t;state.location='';state.category='Alla';state.festoolFilter='Alla';state.query='';$('search').value='';render();if(t==='festool'||t==='register')document.querySelector('.workspace').scrollIntoView({behavior:'smooth',block:'start'});}
 function showPlace(name){state.tab='places';state.location=name;state.category='Alla';state.query='';$('search').value='';render();window.scrollTo({top:document.querySelector('.workspace').offsetTop-20,behavior:'smooth'});}
 function matchItem(i){const place=state.location?i.location===state.location:true;const category=state.category==='Alla'||i.category===state.category;return place&&category&&searchMatch(itemHaystack(i));}
 function makeCard(i){const card=el('button','item');card.type='button';const media=el('div','item-image');addImg(media,i);const badge=text('span',String(i.quantity||1)+' st','qty');media.append(badge);card.append(media);const info=el('div','item-info');info.append(text('span',i.category||'Övrigt','tag'),text('h3',i.name));if(isFestool(i))info.append(text('span','FESTOOL'+(i.model?' · '+i.model:''),'item-brand'));const where=el('div','item-where');where.append(text('span','⌖'),text('span',i.location));info.append(where);card.append(info);card.addEventListener('click',()=>openDetail(i));return card;}
@@ -210,7 +309,49 @@ function renderFestool(){
  if(!collection.length){const content=$('content');content.replaceChildren();const e=el('div','empty');e.append(text('h3','Din Festool-samling börjar här'),text('p','Registrera din första Festool-maskin med fabrikat Festool, eller redigera ett befintligt föremål och fyll i fabrikat. Inga gamla registreringar har ändrats.'));content.append(e);return;}
  drawItems(hits);
 }
-function render(){const allPlaces=placesAll();$('statItems').textContent=state.items.length.toLocaleString('sv');$('statPlaces').textContent=allPlaces.length.toLocaleString('sv');$('statPhotos').textContent=state.items.filter(imageFor).length.toLocaleString('sv');$('tabPlaces').setAttribute('aria-pressed',String(state.tab==='places'));$('tabItems').setAttribute('aria-pressed',String(state.tab==='items'));$('tabFestool').setAttribute('aria-pressed',String(state.tab==='festool'));const context=$('context'),placeResults=$('placeResults');context.replaceChildren();placeResults.replaceChildren();context.hidden=true;placeResults.hidden=true;$('categoryFilters').hidden=true;$('festoolPanel').hidden=true;$('festoolPanel').replaceChildren();
+
+/* Read-only register view. Reuses the loaded local register; never writes to IndexedDB or the cloud. */
+function renderRegisterRows(target,items){
+ const fragment=document.createDocumentFragment();
+ for(const item of items){
+  const row=document.createElement('tr');
+  const values=[item.name||'',item.category||'Övrigt',item.location||'Ej angiven',String(item.quantity||1)];
+  values.forEach((value,index)=>{
+   const cell=document.createElement('td');
+   cell.textContent=value;
+   if(index===1)cell.className='register-category';
+   if(index===3)cell.className='register-number';
+   row.append(cell);
+  });
+  fragment.append(row);
+ }
+ if(!items.length){
+  const row=document.createElement('tr'),cell=document.createElement('td');
+  cell.colSpan=4;cell.textContent='Inga föremål matchar ditt urval.';row.append(cell);fragment.append(row);
+ }
+ target.replaceChildren(fragment);
+}
+function renderRegister(){
+ const scope=$('registerScope').value,sort=$('registerSort').value,query=norm($('registerSearch').value);
+ const terms=query.split(/\s+/).filter(Boolean);
+ const collator=new Intl.Collator('sv',{sensitivity:'base',numeric:true});
+ const cmp=(a,b)=>collator.compare(String(a||''),String(b||''));
+ const items=state.items.filter(item=>(scope!=='festool'||isFestool(item))&&terms.every(term=>norm([item.name,item.location,item.category,item.brand,item.model].join(' ')).includes(term))).slice();
+ items.sort((a,b)=>sort==='place'?(cmp(a.location,b.location)||cmp(a.name,b.name)):sort==='category'?(cmp(a.category,b.category)||cmp(a.name,b.name)):(cmp(a.name,b.name)||cmp(a.location,b.location)));
+ renderRegisterRows($('registerRows'),items);
+ renderRegisterRows($('registerPrintRows'),items);
+ const count=items.length,places=new Set(items.map(i=>i.location)).size,quantity=items.reduce((sum,i)=>sum+(Number(i.quantity)||1),0);
+ const countText=count.toLocaleString('sv-SE')+' föremål · '+places.toLocaleString('sv-SE')+' platser · '+quantity.toLocaleString('sv-SE')+' st totalt';
+ $('registerSummary').textContent=countText;
+ $('registerPrintButton').disabled=!count;
+ const scopeLabel=scope==='festool'?'Endast Festool':'Alla föremål';
+ const sortLabel=sort==='place'?'förvaringsplats':sort==='category'?'kategori':'namn';
+ const date=new Date().toLocaleDateString('sv-SE',{year:'numeric',month:'long',day:'numeric'});
+ $('registerPrintMeta').textContent=date+' · '+scopeLabel+' · Sortering: '+sortLabel+(query?' · Sökning: '+$('registerSearch').value.trim():'');
+ $('registerPrintFooter').textContent=countText+' · Registerlista utan bilder';
+}
+function render(){const allPlaces=placesAll();$('statItems').textContent=state.items.length.toLocaleString('sv');$('statPlaces').textContent=allPlaces.length.toLocaleString('sv');$('statPhotos').textContent=state.items.filter(imageFor).length.toLocaleString('sv');$('tabPlaces').setAttribute('aria-pressed',String(state.tab==='places'));$('tabItems').setAttribute('aria-pressed',String(state.tab==='items'));$('tabFestool').setAttribute('aria-pressed',String(state.tab==='festool'));$('tabRegister').setAttribute('aria-pressed',String(state.tab==='register'));$('registerPanel').hidden=state.tab!=='register';$('content').hidden=state.tab==='register';$('resultsCount').hidden=state.tab==='register';const context=$('context'),placeResults=$('placeResults');context.replaceChildren();placeResults.replaceChildren();context.hidden=true;placeResults.hidden=true;$('categoryFilters').hidden=true;$('festoolPanel').hidden=true;$('festoolPanel').replaceChildren();
+ if(state.tab==='register'){$('sectionTitle').textContent='Registerlista';$('sectionSub').textContent='Alla dina föremål, kategorier och förvaringsplatser i en lista utan bilder.';renderRegister();return;}
  if(state.tab==='festool'&&!state.location){renderFestool();return;}
  if(state.location){const current=state.location;context.hidden=false;const back=text('button','← Alla förvaringsplatser','linkback');back.addEventListener('click',()=>{state.location='';state.tab='places';render();});context.append(back);if(!state.readonly){const place=placesAll().find(p=>p.name===current);if(place){const rename=text('button','✎ Byt namn','button secondary context-action');rename.addEventListener('click',()=>startPlace(place));context.append(rename);const remove=text('button','Ta bort plats','button danger context-action');remove.addEventListener('click',()=>deletePlace(place));context.append(remove);}}$('sectionTitle').textContent=current;$('sectionSub').textContent='Alla föremål i '+current+' – tryck på en bild för detaljer.';drawCategories();const hits=state.items.filter(matchItem);$('resultsCount').textContent=hits.length+' föremål';drawItems(hits);return;}
  if(state.tab==='places'){$('sectionTitle').textContent='Mina förvaringsplatser';$('sectionSub').textContent='Tryck på en låda eller ett skåp för att se hela innehållet som bildgalleri.';const places=allPlaces.filter(p=>searchMatch(p.name)||state.items.some(i=>i.location===p.name&&searchMatch(itemHaystack(i))));$('resultsCount').textContent=places.length+' förvaringsplatser';drawPlaces(places);
@@ -264,7 +405,11 @@ function openDetail(item){
 }
 function closeDetail(){if($('detail').open)$('detail').close();}
 $('tabPlaces').addEventListener('click',()=>setTab('places'));
-$('tabItems').addEventListener('click',()=>setTab('items'));$('tabFestool').addEventListener('click',()=>setTab('festool'));$('festoolEntry').addEventListener('click',()=>setTab('festool'));
+$('tabItems').addEventListener('click',()=>setTab('items'));$('tabFestool').addEventListener('click',()=>setTab('festool'));$('tabRegister').addEventListener('click',()=>setTab('register'));
+$('registerScope').addEventListener('change',renderRegister);
+$('registerSort').addEventListener('change',renderRegister);
+$('registerSearch').addEventListener('input',renderRegister);
+$('registerPrintButton').addEventListener('click',()=>{renderRegister();if(state.items.length&&$('registerScope').value&&$('registerPrintButton').disabled===false)window.print();});$('festoolEntry').addEventListener('click',()=>setTab('festool'));
 $('search').addEventListener('input',e=>{state.query=e.target.value.trim();render();});
 $('refresh').addEventListener('click',()=>readFromDevice());
 $('restoreFile').addEventListener('click',()=>$('restoreInput').click());
