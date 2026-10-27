@@ -1,5 +1,5 @@
 // Jans verkstad: natverksprioriterad navigering, offlinebackup av senaste appen.
-const CACHE = "jans-verkstad-register-20261027-v5";
+const CACHE = "jans-verkstad-register-20261027-v6";
 const FILES = [
   "./index.html",
   "./verkstad-v3-2-test.html",
@@ -10,6 +10,8 @@ const FILES = [
   "./index-D-qwewMk.css",
   "./app-projekt-detailed-v2.js",
   "./projekt-ritningar.html",
+  "./verkstadsoversikt.html",
+  "./projekt-autosynk.js",
   "./projekt-moln.html",
   "./synk-kontroll.html",
   "./synk-anslut.html"
