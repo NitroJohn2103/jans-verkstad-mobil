@@ -70,9 +70,10 @@ async function remoteData(c){
  }
  throw Error('Oväntat stort molnregister.');
 }
-function canonical(o){
+function differences(a,b){
  const ignore=new Set(['id','kind','photo','photo_path','photo_signature','_deleted']);
- return JSON.stringify(Object.keys(o||{}).filter(k=>!ignore.has(k)).sort().map(k=>[k,o[k]]));
+ const fields=new Set([...Object.keys(a||{}),...Object.keys(b||{})]);
+ return [...fields].filter(k=>!ignore.has(k) && JSON.stringify(a?.[k])!==JSON.stringify(b?.[k])).sort();
 }
 async function photoHash(s){
  const bytes=new TextEncoder().encode(s);
@@ -80,13 +81,13 @@ async function photoHash(s){
  return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 async function compare(local,remote){
- const cloud=new Map(),errors=[],missing=[],extra=[],changed=[],photoErrors=[];
+ const cloud=new Map(),errors=[],missing=[],extra=[],changed=[],photoErrors=[],changedDetails=[],deletedKeys=[];
  let duplicates=0,tombstones=0,images=0;
  for(const r of remote){
   if(!['item','location'].includes(r.kind)||typeof r.record_id!=='string')throw Error('Molnet innehåller okända poster.');
   const key=r.kind+':'+r.record_id;
   if(cloud.has(key)){duplicates++;continue;}
-  if(r.content?._deleted){tombstones++;continue;}
+  if(r.content?._deleted){tombstones++;deletedKeys.push(key);continue;}
   cloud.set(key,r);
  }
  const ls=new Map();
@@ -95,7 +96,8 @@ async function compare(local,remote){
  for(const [key,item] of ls){
   const r=cloud.get(key);
   if(!r){missing.push(item.name||key);continue;}
-  if(canonical(item)!==canonical(r.content))changed.push(item.name||key);
+  const fields=differences(item,r.content);
+  if(fields.length){changed.push(item.name||key);changedDetails.push({name:item.name||key,fields});}
   if(item.kind==='item'){
    const photo=item.photo||null;
    const sig=r.content?.photo_signature||null;
@@ -107,7 +109,10 @@ async function compare(local,remote){
   }
  }
  for(const [key,r] of cloud)if(!ls.has(key))extra.push(r.content?.name||key);
- return {localItems:local.items.length,localPlaces:local.places.length,cloudItems:[...cloud.values()].filter(x=>x.kind==='item').length,cloudPlaces:[...cloud.values()].filter(x=>x.kind==='location').length,pending:local.pending.length,active:local.active,localOwner:local.owner,remoteOwner:cloud.size?true:false,duplicates,tombstones,images,errors,missing,extra,changed,photoErrors,ok:duplicates===0&&errors.length===0&&missing.length===0&&extra.length===0&&changed.length===0&&photoErrors.length===0&&tombstones===0&&ls.size===cloud.size};
+ const deletedOverlap=deletedKeys.filter(key=>ls.has(key));
+ const fieldCounts={};
+ for(const detail of changedDetails)for(const field of detail.fields)fieldCounts[field]=(fieldCounts[field]||0)+1;
+ return {changedDetails,fieldCounts,deletedOverlap,localItems:local.items.length,localPlaces:local.places.length,cloudItems:[...cloud.values()].filter(x=>x.kind==='item').length,cloudPlaces:[...cloud.values()].filter(x=>x.kind==='location').length,pending:local.pending.length,active:local.active,localOwner:local.owner,remoteOwner:cloud.size?true:false,duplicates,tombstones,images,errors,missing,extra,changed,photoErrors,ok:duplicates===0&&errors.length===0&&missing.length===0&&extra.length===0&&changed.length===0&&photoErrors.length===0&&deletedOverlap.length===0&&ls.size===cloud.size};
 }
 function display(a){
  const errors=[['Saknas i molnet',a.missing],['Endast i molnet',a.extra],['Olika uppgifter',a.changed],['Olika bildsignaturer',a.photoErrors],['Lokala problem',a.errors]];
@@ -115,7 +120,13 @@ function display(a){
  if(a.ok)html+='<p class="good"><b>Godkänd jämförelse!</b> Alla föremål, platser och bildsignaturer som kontrollerats överensstämmer. <b>Synkronisering har INTE aktiverats.</b> Skicka en bild av resultatet i chatten, så gör vi nästa säkra steg.</p>';
  else{
   html+='<p class="bad"><b>Registren skiljer sig åt.</b> Synkronisera inte. Skicka en bild på resultatet så går vi igenom avvikelserna.</p>';
-  if(a.duplicates||a.tombstones)html+='<p>Dubbletter: '+a.duplicates+' · Molnposter markerade borttagna: '+a.tombstones+'</p>';
+  if(a.duplicates||a.tombstones)html+='<p>Dubbletter: '+a.duplicates+' · Historiska borttagningsmarkeringar i molnet: '+a.tombstones+' · Av dessa överlappar aktiva lokala poster: '+a.deletedOverlap.length+'</p>';
+  if(a.changedDetails.length){
+   const fields=Object.entries(a.fieldCounts).sort((x,y)=>y[1]-x[1]);
+   html+='<h3>Vilka uppgifter skiljer sig?</h3><p>Antal föremål/platser med skillnad per fält (en post kan förekomma i flera fält):</p><ul>'+fields.map(([k,n])=>'<li><b>'+ex(k)+'</b>: '+n+'</li>').join('')+'</ul>';
+   html+='<h3>Exempel på skillnader</h3><ul>'+a.changedDetails.slice(0,16).map(d=>'<li>'+ex(d.name)+' – '+d.fields.map(ex).join(', ')+'</li>').join('')+'</ul>';
+   html+='<p class="muted">Inga fältvärden skickas eller sparas av kontrollen. Den läser endast uppgifterna och visar namnen på fälten som skiljer sig.</p>';
+  }
   for(const [name,arr] of errors)if(arr.length)html+='<p><b>'+ex(name)+' ('+arr.length+'):</b> '+arr.slice(0,8).map(ex).join(', ')+(arr.length>8?' …':'')+'</p>';
  }
  $('result').innerHTML=html;
