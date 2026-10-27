@@ -1,3 +1,29 @@
 <!doctype html><html lang="sv"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#234e3d"><meta name="description" content="Verktyg, foton och förvaringsplatser – samlade i din telefon."><link rel="manifest" href="./manifest.webmanifest?v=20261027b"><link rel="apple-touch-icon" sizes="256x256" href="./jans-hantverk-256.png?v=20261027b"><link rel="icon" type="image/png" sizes="256x256" href="./jans-hantverk-256.png?v=20261027b"><link rel="icon" href="./icon.svg"><title>Jans verkstad</title>  <script type="module" crossorigin src="./app-zpV9q5eu.js"></script>
   <link rel="stylesheet" crossorigin href="./index-D-qwewMk.css">
-</head><body><div id="root"></div></body></html>
+</head><body><div id="root"></div><style>
+/* Projektnavigering; den befintliga registerappen och dess lagring ändras inte. */
+.sidebar nav .jans-project-link{display:flex;align-items:center;gap:11px;padding:17px 13px;border-radius:12px;font-size:14px;font-weight:600;text-decoration:none;color:var(--ink);white-space:nowrap}
+.sidebar nav .jans-project-link:hover,.sidebar nav .jans-project-link:focus-visible{background:var(--sage)}
+.sidebar nav .jans-project-link svg{width:20px;height:20px;flex-shrink:0}
+@media(max-width:760px){.sidebar nav{flex-wrap:wrap}.sidebar nav .jans-project-link{width:100%;padding:12px 10px;font-size:13px;background:#e1e8d9}}
+</style>
+<script>
+/* Skonsam inpassning i React-menyn utan ändring i registerkod. */
+(function(){
+  function addProjectLink(){
+    var nav=document.querySelector('.sidebar nav');
+    if(!nav||nav.querySelector('.jans-project-link'))return;
+    var a=document.createElement('a');
+    a.href='./projekt-ritningar.html';
+    a.className='jans-project-link';
+    a.setAttribute('aria-label','Öppna Projekt och ritningar');
+    a.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M7 12h10M7 16h7"/></svg><span>Projekt &amp; ritningar</span>';
+    nav.appendChild(a);
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    addProjectLink();
+    var observer=new MutationObserver(addProjectLink);
+    observer.observe(document.getElementById('root'),{childList:true,subtree:true});
+  });
+})();
+</script></body></html>
