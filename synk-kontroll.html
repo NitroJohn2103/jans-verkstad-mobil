@@ -36,10 +36,17 @@ async function localData(){
  try{
   if(!db.objectStoreNames.contains('register'))throw Error('Registret saknas.');
   const tx=db.transaction(['register',...['pending','syncmeta'].filter(x=>db.objectStoreNames.contains(x))],'readonly');
-  const d=await getRequest(tx.objectStore('register').get('data'));
-  const pending=db.objectStoreNames.contains('pending')?await getRequest(tx.objectStore('pending').getAll()):[];
-  const active=db.objectStoreNames.contains('syncmeta')?await getRequest(tx.objectStore('syncmeta').get('active')):false;
-  const owner=db.objectStoreNames.contains('syncmeta')?await getRequest(tx.objectStore('syncmeta').get('owner')):null;
+  // Queue every IndexedDB request synchronously before awaiting, so Safari cannot auto-close the transaction.
+  const reqData=tx.objectStore('register').get('data');
+  const reqPending=db.objectStoreNames.contains('pending')?tx.objectStore('pending').getAll():null;
+  const reqActive=db.objectStoreNames.contains('syncmeta')?tx.objectStore('syncmeta').get('active'):null;
+  const reqOwner=db.objectStoreNames.contains('syncmeta')?tx.objectStore('syncmeta').get('owner'):null;
+  const [d,pending,active,owner]=await Promise.all([
+    getRequest(reqData),
+    reqPending?getRequest(reqPending):Promise.resolve([]),
+    reqActive?getRequest(reqActive):Promise.resolve(false),
+    reqOwner?getRequest(reqOwner):Promise.resolve(null)
+  ]);
   if(!d||!Array.isArray(d.items)||!Array.isArray(d.places))throw Error('Registret saknas eller har fel format.');
   return {items:d.items,places:d.places,pending:pending||[],active:!!active,owner:owner||null};
  }finally{db.close();}
@@ -64,7 +71,7 @@ async function remoteData(c){
  throw Error('Oväntat stort molnregister.');
 }
 function canonical(o){
- const ignore=new Set(['id','photo','photo_path','photo_signature','_deleted']);
+ const ignore=new Set(['id','kind','photo','photo_path','photo_signature','_deleted']);
  return JSON.stringify(Object.keys(o||{}).filter(k=>!ignore.has(k)).sort().map(k=>[k,o[k]]));
 }
 async function photoHash(s){
