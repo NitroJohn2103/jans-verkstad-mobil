@@ -50,8 +50,14 @@
       db.close();
     }
   }
-  async function saveRemoteChanges(changes) {
+  async function saveRemoteChanges(changes, expected) {
     if (!changes.projects.length && !changes.files.length) return;
+    const originalProjects = new Map(expected.projects.map(p => [p.id, p]));
+    const originalFiles = new Set(expected.files.map(f => f.id));
+    // Appen kan bara lagga till eller ta bort bilagor, inte andra filinnehall
+    // med samma ID. Tillat darfor aldrig automatisk overskrivning av en bilaga.
+    if (changes.files.some(f => originalFiles.has(f.id)))
+      throw Error('En befintlig bilaga har andrats. Automatisk overskrivning stoppades.');
     const db = await new Promise((resolve, reject) => {
       const req = indexedDB.open(DB, 1);
       req.onsuccess = () => resolve(req.result);
@@ -61,9 +67,25 @@
       await new Promise((resolve, reject) => {
         const tx = db.transaction(['projects', 'files'], 'readwrite');
         tx.oncomplete = resolve;
-        tx.onabort = tx.onerror = () => reject(tx.error || Error('Kan inte spara molnprojekt lokalt'));
-        for (const p of changes.projects) tx.objectStore('projects').put(p);
-        for (const f of changes.files) tx.objectStore('files').put(f);
+        tx.onabort = tx.onerror = () => reject(tx.error || Error('Projektet andrades under synkroniseringen. Prova igen.'));
+        function ensureSameAndWrite(project) {
+          const store = tx.objectStore('projects'), get = store.get(project.id);
+          get.onsuccess = () => {
+            const now = get.result, before = originalProjects.get(project.id);
+            if (before) {
+              const same = now && projectHash(now) === projectHash(before) &&
+                String(now.created || '') === String(before.created || '') &&
+                String(now.updated || '') === String(before.updated || '');
+              if (!same) { tx.abort(); return; }
+              store.put(project);
+            } else {
+              if (now) { tx.abort(); return; }
+              store.add(project);
+            }
+          };
+        }
+        for (const project of changes.projects) ensureSameAndWrite(project);
+        for (const file of changes.files) tx.objectStore('files').add(file);
       });
     } finally {
       db.close();
@@ -270,7 +292,7 @@
     if (!ready()) { rerun = true; return; }
 
     if (remoteChanges.projects.length || remoteChanges.files.length) {
-      await saveRemoteChanges(remoteChanges);
+      await saveRemoteChanges(remoteChanges, local);
       if (typeof refresh === 'function') await refresh();
     }
     let finalName = cloud.name;
