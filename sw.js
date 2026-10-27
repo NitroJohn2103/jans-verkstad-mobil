@@ -1,5 +1,5 @@
 // Jans verkstad: natverksprioriterad navigering, offlinebackup av senaste appen.
-const CACHE = "jans-verkstad-register-20261027-v1";
+const CACHE = "jans-verkstad-register-20261027-v2";
 const FILES = [
   "./index.html",
   "./verkstad-v3-2-test.html",
@@ -8,7 +8,9 @@ const FILES = [
   "./jans-hantverk-256.png",
   "./icon.svg",
   "./index-D-qwewMk.css",
-  "./app-zpV9q5eu.js"
+  "./app-projekt-detailed-v2.js",
+  "./projekt-ritningar.html",
+  "./synk-kontroll.html"
 ];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
