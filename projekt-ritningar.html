@@ -30,7 +30,7 @@ dialog::backdrop{background:#101c14a9}.formrow{display:grid;grid-template-column
 .filelist{list-style:none;padding:0;margin:15px 0}.filelist li{border:1px solid #e3e9e4;border-radius:10px;margin:8px 0;padding:11px;display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;overflow-wrap:anywhere}
 .filelist img{max-width:100%;max-height:320px;object-fit:contain;display:block;margin:9px auto;border-radius:8px}
 .filelink{color:#215d46;overflow-wrap:anywhere}.projectnote{white-space:pre-wrap;overflow-wrap:anywhere}.notice{color:#176345;font-size:14px;min-height:20px;margin-top:8px}
-.error{color:#a82926}a{color:#215d46}small{font-size:12px}
+.error{color:#a82926}#autoSyncStatus[data-kind="error"]{color:#a82926;font-weight:650}#autoSyncStatus[data-kind="good"]{color:#176345}#autoSyncStatus[data-kind="working"]{color:#234e3d}a{color:#215d46}small{font-size:12px}
 @media(max-width:540px){header b{font-size:17px}header a{font-size:13px}.formrow{grid-template-columns:1fr}.toolbar>button{flex:1}.card{padding:15px}dialog{padding:16px}}
 </style>
 </head>
@@ -40,9 +40,11 @@ dialog::backdrop{background:#101c14a9}.formrow{display:grid;grid-template-column
 <section class="intro"><p class="eyebrow">IDÉER TILL FRAMTIDA BYGGEN</p><h1>Projekt & ritningar</h1><p class="muted">Spara skärmdumpar, bilder, PDF-ritningar, webblänkar och egna idéer. Hitta tillbaka när du vill börja bygga.</p></section>
 <div class="toolbar"><input id="search" type="search" placeholder="Sök projekt, material eller anteckning…" aria-label="Sök projekt"><select id="filter" aria-label="Filtrera status"><option value="">Alla statusar</option><option>Idé</option><option>Planerat</option><option>Pågående</option><option>Färdigt</option></select><button class="primary" id="add">＋ Nytt projekt</button></div>
 <p class="muted" id="count">Läser projekt …</p><section class="cards" id="cards" aria-label="Projekt"></section>
-<section class="panel"><h2>Molnkopior för Projekt & ritningar</h2><p>Den första molnversionen låter dig manuellt spara och hämta kompletta projektkopior mellan iPhone och Mac. Befintliga projekt ändras inte automatiskt.</p><a class="button secondary" href="./projekt-moln.html">Öppna säker molnkopiering →</a></section>
-<section class="panel"><h2>Säkerhetskopiering</h2><p class="note"><b>Viktigt:</b> Den här första versionen sparar projekten och bilagorna lokalt på den enhet där du använder den. De synkroniseras ännu inte med verktygsregistrets molnlagring. Exportera därför en säkerhetskopia regelbundet. Använd samma öppningssätt på iPhone varje gång.</p><div class="toolbar"><button id="backup" class="secondary">↓ Exportera projekt med filer</button><label class="button secondary" for="restore">↑ Importera projekt</label><input id="restore" type="file" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0"></div><small>Projektens säkerhetskopia är separat från säkerhetskopian för verktygsregistret. Vid import behålls redan sparade projekt.</small><p id="message" class="notice" role="status"></p></section>
+<section class="panel"><h2>Automatisk molnsynkronisering</h2><p id="autoSyncStatus" class="muted" role="status" aria-live="polite">Synkroniseringen är inte aktiverad ännu.</p><p class="muted">Aktivera separat på iPhone och Mac när du vill börja. Då synkroniseras projekt och bilagor när sidan används och internet finns. Vid motstridiga ändringar stoppas synkroniseringen i stället för att skriva över uppgifter. Borttagningar synkroniseras inte automatiskt.</p><button class="primary" id="autoSyncToggle" type="button">Aktivera automatisk synkronisering</button><button class="secondary" id="autoSyncCheck" type="button">Kontrollera synkronisering nu</button></section>
+<section class="panel"><h2>Molnkopior för Projekt & ritningar</h2><p>Behåll möjligheten att skapa och hämta separata, tidsstämplade molnkopior vid behov. Automatisk synkronisering visas ovan.</p><a class="button secondary" href="./projekt-moln.html">Öppna säker molnkopiering →</a></section>
+<section class="panel"><h2>Säkerhetskopiering</h2><p class="note"><b>Viktigt:</b> Projekten sparas lokalt och synkroniseras separat via ditt molnkonto när inloggning och internet fungerar. Gör ändå en regelbunden säkerhetskopia. Verktygsregistrets egna molnlagring påverkas inte.</p><div class="toolbar"><button id="backup" class="secondary">↓ Exportera projekt med filer</button><label class="button secondary" for="restore">↑ Importera projekt</label><input id="restore" type="file" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0"></div><small>Projektens säkerhetskopia är separat från säkerhetskopian för verktygsregistret. Vid import behålls redan sparade projekt.</small><p id="message" class="notice" role="status"></p></section>
 </main>
+<script src="./projekt-autosynk.js"></script>
 <dialog id="editor"><form id="projectForm"><h2 id="formTitle">Nytt projekt</h2><input type="hidden" name="id"><label class="field">Projektnamn *<input name="title" required maxlength="160" placeholder="Till exempel: Låda i valnöt"></label><div class="formrow"><label class="field">Status<select name="status"><option>Idé</option><option>Planerat</option><option>Pågående</option><option>Färdigt</option></select></label><label class="field">Sökord / material<input name="tags" maxlength="240" placeholder="Valnöt, låda, sinkor"></label></div><label class="field">Länk till webbsida<input name="link" type="url" maxlength="2000" placeholder="https://..."></label><label class="field">Egna anteckningar<textarea name="notes" maxlength="12000" placeholder="Mått, material, idéer, vad som ska ändras ..."></textarea></label><label class="field">Bilder, skärmdumpar eller PDF (valfritt)<input type="file" id="attachments" accept="image/*,.pdf,application/pdf" multiple></label><p class="muted">Du kan lägga till fler filer när som helst. Max 25 MB per fil, högst 30 filer per projekt.</p><p id="newFileSummary" class="muted"></p><p id="formError" class="error" role="alert"></p><div class="dialogbuttons"><button type="button" class="secondary" id="cancelForm">Avbryt</button><button type="submit" class="primary" id="save">Spara projekt</button></div></form></dialog>
 <dialog id="details"><h2 id="detailsTitle"></h2><div id="detailsBody"></div><div class="dialogbuttons"><button class="danger" id="deleteProject">Ta bort</button><button class="secondary" id="closeDetails">Stäng</button><button class="primary" id="editProject">Redigera</button></div></dialog>
 <script>
@@ -122,19 +124,19 @@ async function save(e){
  t.objectStore('projects').put(p);files.forEach(function(file){t.objectStore('files').put({id:crypto.randomUUID(),projectId:p.id,name:file.name,type:file.type||(/\.pdf$/i.test(file.name)?'application/pdf':'application/octet-stream'),size:file.size,created:now,blob:file})});
  });
  $('editor').close();await render();if(current&&current.id===p.id)await details(p.id);
- message('Projektet är sparat på den här enheten.');
+ message('Projektet är sparat på den här enheten.');if(window.JansProjectAutoSync)window.JansProjectAutoSync.changed();
  }catch(e){$('formError').textContent=e.message}finally{btn.disabled=false}
 }
 async function removeFile(id){
  if(!confirm('Ta bort den här filen från projektet?'))return;
- try{await transaction('files','readwrite',function(t){t.objectStore('files').delete(id)});await details(current.id);await render();message('Filen är borttagen.')}catch(e){message(e.message,true)}
+ try{await transaction('files','readwrite',function(t){t.objectStore('files').delete(id)});await details(current.id);await render();message('Filen är borttagen.');if(window.JansProjectAutoSync)window.JansProjectAutoSync.changed()}catch(e){message(e.message,true)}
 }
 async function deleteProject(){
  if(!current||!confirm('Vill du verkligen ta bort projektet och alla dess PDF- och bildfiler?'))return;
  try{
  var id=current.id,files=await byProject(id);
  await transaction(['projects','files'],'readwrite',function(t){t.objectStore('projects').delete(id);files.forEach(function(f){t.objectStore('files').delete(f.id)})});
- $('details').close();current=null;freeUrls();await render();message('Projektet har tagits bort.');
+ $('details').close();current=null;freeUrls();await render();message('Projektet har tagits bort.');if(window.JansProjectAutoSync)window.JansProjectAutoSync.changed();
  }catch(e){message(e.message,true)}
 }
 function base64(blob){return new Promise(function(resolve,reject){var r=new FileReader;r.onload=function(){resolve(String(r.result).split(',')[1])};r.onerror=function(){reject(r.error)};r.readAsDataURL(blob)})}
@@ -166,7 +168,7 @@ async function restore(file){
  }
  var existingFiles=new Set((await all('files')).map(function(x){return x.id}));
  await transaction(['projects','files'],'readwrite',function(t){ps.forEach(function(p){t.objectStore('projects').put(p)});fs.filter(function(f){return !existingFiles.has(f.id)}).forEach(function(f){t.objectStore('files').put(f)})});
- await render();message('Importerade '+ps.length+' nya projekt. Befintliga projekt ändrades inte.');
+ await render();message('Importerade '+ps.length+' nya projekt. Befintliga projekt ändrades inte.');if(window.JansProjectAutoSync)window.JansProjectAutoSync.changed();
  }catch(e){message('Kunde inte importera: '+e.message,true)}
 }
 $('add').onclick=function(){current=null;formOpen(null)};
@@ -181,11 +183,13 @@ $('deleteProject').onclick=deleteProject;
 $('detailsBody').onclick=function(e){var b=e.target.closest('.remove-file');if(b)removeFile(b.dataset.id)};
 $('backup').onclick=backup;$('restore').onchange=async function(){await restore(this.files[0]);this.value=''};
 $('details').addEventListener('close',freeUrls);
+$('autoSyncToggle').onclick=function(){if(window.JansProjectAutoSync)window.JansProjectAutoSync.toggle()};
+$('autoSyncCheck').onclick=function(){if(window.JansProjectAutoSync)window.JansProjectAutoSync.check()};
 try{
  var r=indexedDB.open(DB,VERSION);
  r.onupgradeneeded=function(){var d=r.result;if(!d.objectStoreNames.contains('projects'))d.createObjectStore('projects',{keyPath:'id'});if(!d.objectStoreNames.contains('files')){var s=d.createObjectStore('files',{keyPath:'id'});s.createIndex('byProject','projectId',{unique:false})}};
  r.onerror=function(){message('Kan inte öppna lokal lagring på den här enheten.',true)};
- r.onsuccess=function(){db=r.result;render()};
+ r.onsuccess=function(){db=r.result;render();if(window.JansProjectAutoSync)window.JansProjectAutoSync.start(render)};
 }catch(e){message('Lagring stöds inte i den här webbläsaren: '+e.message,true)}
 })();
 </script>
