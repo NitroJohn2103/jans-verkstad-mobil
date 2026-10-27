@@ -10,7 +10,7 @@ Verktygsregistret sparas lokalt och har separat molnsynkronisering via Supabase 
 
 **Projekt & ritningar** sparas i en egen lokal databas och en privat Supabase-lagringsyta `jans-projekt`. Denna gren innehåller en första försiktig automatisk projektsynkronisering:
 
-- Vid öppning, återanslutning, ny aktivitet och under användning kontrollerar appen den senaste molnkopian.
+- Automatisk synkronisering är **avstängd tills den aktiveras manuellt** på varje enhet med knappen på sidan *Projekt & ritningar*. När den är aktiverad kontrollerar appen molnkopian vid öppning, återanslutning, ny aktivitet och under användning.
 - Nya projekt och bilagor och ändringar som endast gjorts på en sida kan föras över automatiskt.
 - Samtidiga motstridiga ändringar stoppas. Raderingar förs inte över automatiskt.
 - Versionshistorik och äldre tidsstämplade kopior bevaras. En kopia får vara högst 25 MB.
