@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#234e3d"><title>Säker anslutning – Jans verkstad</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#243e32;background:#f4f6f0}*{box-sizing:border-box}body{margin:0}
+header{background:#234e3d;color:#fff;padding:20px 16px}header div,main{max-width:740px;margin:0 auto}
+header b{font-size:19px}a{color:#215d47}header a{color:#fff;display:block;margin-top:10px}
+main{padding:23px 17px 80px}h1{font-size:29px;margin:8px 0 10px}h2{font-size:20px;margin:20px 0 6px}
+p{line-height:1.6}.muted{color:#647568}.card{background:#fff;border:1px solid #d7e1d8;border-radius:15px;padding:20px;margin-top:17px}
+button{background:#234e3d;color:#fff;border:0;border-radius:10px;padding:14px 18px;font:inherit;font-weight:700;cursor:pointer;width:100%;min-height:52px}button:disabled{opacity:.55}
+.warn{background:#fff4d8;border-left:4px solid #b48d40;padding:11px 15px;border-radius:5px}
+.good{background:#ecf5ef;border-left:4px solid #347651;padding:11px 15px;border-radius:5px}
+.bad{background:#fdeeee;border-left:4px solid #bd4040;padding:11px 15px;border-radius:5px}
+#result{overflow-wrap:anywhere}ul{padding-left:22px;line-height:1.7}code{font-size:12px}
+</style></head><body>
+<header><div><b>Jans verkstad · Säker anslutning</b><a href="./">← Tillbaka till verktygsregistret</a></div></header>
+<main>
+<p class="muted">TVÅSTEGSKONTROLL · INGA ÖVERFÖRINGAR TILL MOLNET</p>
+<h1>Anslut utan att skriva över</h1>
+<p>Du har redan kontrollerat att 79 föremål, 14 platser och fotografierna stämmer. Här gör vi en ny kontroll innan vi säkert kopplar det lokala registret till molnet, utan att skicka upp de 93 posterna.</p>
+<div class="card"><p class="warn">Steg 1 är <b>enbart läsning</b>. Steg 2 kräver ditt godkännande och ändrar då endast lokala synkroniseringsmarkeringar på den här enheten. Föremål och fotografier ändras inte. Ingen uppladdning till molnet görs under anslutningen.</p>
+<button id="run">1. Kontrollera registren på nytt</button><div id="activation" hidden style="margin-top:20px"><p class="good"><b>Registret överensstämmer.</b> Nästa knapp ska markera de 93 redan identiska posterna som anslutna. Den är tillgänglig endast efter godkänd kontroll.</p><button id="activate">2. Bekräfta och anslut lokalt</button></div><p id="outcome" role="status"></p>
+<p id="progress" class="muted" role="status" aria-live="polite"></p><div id="result"></div></div>
+<div class="card"><h2>Vad händer när du ansluter?</h2><p>Efter en godkänd jämförelse sparas molnets nuvarande versionsdatum för varje post i din iPhones lokala synkroniseringshistorik. Listan med identiska väntande poster kan då tömmas utan någon uppladdning. Ändringar du gör <em>därefter</em> kan synkroniseras som vanligt.</p><p class="muted">För säkerhets skull ska du behålla den gamla appen och säkerhetskopian tills synkroniseringen har kontrollerats.</p></div>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const ex=t=>String(t??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
+const setProgress=t=>{$('progress').textContent=t;};
+const getRequest=r=>new Promise((ok,fail)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>fail(r.error||Error('Läsfel'));});
+async function localData(){
+ const db=await new Promise((ok,fail)=>{const r=indexedDB.open('jans-verkstad-mobil');r.onsuccess=()=>ok(r.result);r.onerror=()=>fail(r.error||Error('Kunde inte öppna registret'));r.onupgradeneeded=()=>{r.transaction.abort();fail(Error('Register saknas på den här enheten. Öppna kontrollen inifrån Jans verkstad NY.'));};});
+ try{
+  if(!db.objectStoreNames.contains('register'))throw Error('Registret saknas.');
+  const tx=db.transaction(['register',...['pending','syncmeta'].filter(x=>db.objectStoreNames.contains(x))],'readonly');
+  // Queue every IndexedDB request synchronously before awaiting, so Safari cannot auto-close the transaction.
+  const reqData=tx.objectStore('register').get('data');
+  const reqPending=db.objectStoreNames.contains('pending')?tx.objectStore('pending').getAll():null;
+  const reqActive=db.objectStoreNames.contains('syncmeta')?tx.objectStore('syncmeta').get('active'):null;
+  const reqOwner=db.objectStoreNames.contains('syncmeta')?tx.objectStore('syncmeta').get('owner'):null;
+  const [d,pending,active,owner]=await Promise.all([
+    getRequest(reqData),
+    reqPending?getRequest(reqPending):Promise.resolve([]),
+    reqActive?getRequest(reqActive):Promise.resolve(false),
+    reqOwner?getRequest(reqOwner):Promise.resolve(null)
+  ]);
+  if(!d||!Array.isArray(d.items)||!Array.isArray(d.places))throw Error('Registret saknas eller har fel format.');
+  return {items:d.items,places:d.places,pending:pending||[],active:!!active,owner:owner||null};
+ }finally{db.close();}
+}
+function connection(){
+ let settings,session;
+ try{settings=JSON.parse(localStorage.getItem('jans-verkstad-supabase-v1')||'null');session=JSON.parse(localStorage.getItem('jans-verkstad-auth-v1')||'null');}catch{}
+ if(!settings?.url||!settings?.key)throw Error('Molnanslutning saknas på den här sidan. Öppna kontrollen från menyn i Jans verkstad NY.');
+ if(!session?.access_token||!session?.user?.id)throw Error('Inloggningen saknas på den här sidan. Öppna kontrollen från Jans verkstad NY där du är inloggad.');
+ if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(settings.url))throw Error('Molnadressen är inte giltig.');
+ return {url:settings.url,key:settings.key,token:session.access_token,owner:session.user.id};
+}
+async function remoteData(c){
+ const records=[];
+ for(let offset=0;offset<30000;offset+=500){
+  const qs=new URLSearchParams({select:'kind,record_id,content,changed_at',owner_id:'eq.'+c.owner,order:'kind.asc,record_id.asc',limit:'500',offset:String(offset)});
+  const response=await fetch(c.url+'/rest/v1/verkstad_records?'+qs.toString(),{method:'GET',cache:'no-store',headers:{apikey:c.key,Authorization:'Bearer '+c.token,Accept:'application/json'}});
+  if(!response.ok){if(response.status===401||response.status===403)throw Error('Inloggningen behöver förnyas i Jans verkstad NY.');throw Error('Kunde inte läsa molnet (HTTP '+response.status+').');}
+  const batch=await response.json();if(!Array.isArray(batch))throw Error('Oväntat svar från molnet.');
+  records.push(...batch);if(batch.length<500)return records;
+ }
+ throw Error('Oväntat stort molnregister.');
+}
+function differences(a,b){
+ const ignore=new Set(['id','kind','photo','photo_path','photo_signature','_deleted']);
+ const fields=new Set([...Object.keys(a||{}),...Object.keys(b||{})]);
+ return [...fields].filter(k=>!ignore.has(k) && JSON.stringify(a?.[k])!==JSON.stringify(b?.[k])).sort();
+}
+async function photoHash(s){
+ const bytes=new TextEncoder().encode(s);
+ const digest=await crypto.subtle.digest('SHA-256',bytes);
+ return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+async function compare(local,remote){
+ const cloud=new Map(),errors=[],missing=[],extra=[],changed=[],photoErrors=[],changedDetails=[],deletedKeys=[];
+ let duplicates=0,tombstones=0,images=0;
+ for(const r of remote){
+  if(!['item','location'].includes(r.kind)||typeof r.record_id!=='string')throw Error('Molnet innehåller okända poster.');
+  const key=r.kind+':'+r.record_id;
+  if(cloud.has(key)){duplicates++;continue;}
+  if(r.content?._deleted){tombstones++;deletedKeys.push(key);continue;}
+  cloud.set(key,r);
+ }
+ const ls=new Map();
+ for(const item of local.items){if(!item?.id)throw Error('Lokalt föremål saknar ID.');const k='item:'+item.id;if(ls.has(k))errors.push('Dubblett lokalt: '+item.name);ls.set(k,{...item,kind:'item'});}
+ for(const place of local.places){if(!place?.id)throw Error('Lokal plats saknar ID.');const k='location:'+place.id;if(ls.has(k))errors.push('Dubblett lokalt: '+place.name);ls.set(k,{...place,kind:'location'});}
+ for(const [key,item] of ls){
+  const r=cloud.get(key);
+  if(!r){missing.push(item.name||key);continue;}
+  const fields=differences(item,r.content);
+  if(fields.length){changed.push(item.name||key);changedDetails.push({name:item.name||key,fields});}
+  if(item.kind==='item'){
+   const photo=item.photo||null;
+   const sig=r.content?.photo_signature||null;
+   const path=r.content?.photo_path||null;
+   if(!photo&&(!sig&&!path))continue;
+   if(!photo||!sig||!path){photoErrors.push(item.name||key);continue;}
+   images++;
+   if(await photoHash(photo)!==sig)photoErrors.push(item.name||key);
+  }
+ }
+ for(const [key,r] of cloud)if(!ls.has(key))extra.push(r.content?.name||key);
+ const deletedOverlap=deletedKeys.filter(key=>ls.has(key));
+ const fieldCounts={};
+ for(const detail of changedDetails)for(const field of detail.fields)fieldCounts[field]=(fieldCounts[field]||0)+1;
+ return {changedDetails,fieldCounts,deletedOverlap,localItems:local.items.length,localPlaces:local.places.length,cloudItems:[...cloud.values()].filter(x=>x.kind==='item').length,cloudPlaces:[...cloud.values()].filter(x=>x.kind==='location').length,pending:local.pending.length,active:local.active,localOwner:local.owner,remoteOwner:cloud.size?true:false,duplicates,tombstones,images,errors,missing,extra,changed,photoErrors,ok:duplicates===0&&errors.length===0&&missing.length===0&&extra.length===0&&changed.length===0&&photoErrors.length===0&&deletedOverlap.length===0&&ls.size===cloud.size};
+}
+function display(a){
+ const errors=[['Saknas i molnet',a.missing],['Endast i molnet',a.extra],['Olika uppgifter',a.changed],['Olika bildsignaturer',a.photoErrors],['Lokala problem',a.errors]];
+ let html='<p><b>På enheten:</b> '+a.localItems+' föremål och '+a.localPlaces+' platser<br><b>I molnet:</b> '+a.cloudItems+' föremål och '+a.cloudPlaces+' platser<br><b>Väntande lokala poster:</b> '+a.pending+'<br><b>Kontrollerade fotografier:</b> '+a.images+'</p>';
+ if(a.ok)html+='<p class="good"><b>Godkänd jämförelse!</b> Alla aktiva föremål, platser och bildsignaturer överensstämmer med molnet. Du kan gå vidare till steg 2 om anslutningen är förberedd.</p>';
+ else{
+  html+='<p class="bad"><b>Registren skiljer sig åt.</b> Synkronisera inte. Skicka en bild på resultatet så går vi igenom avvikelserna.</p>';
+  if(a.duplicates||a.tombstones)html+='<p>Dubbletter: '+a.duplicates+' · Historiska borttagningsmarkeringar i molnet: '+a.tombstones+' · Av dessa överlappar aktiva lokala poster: '+a.deletedOverlap.length+'</p>';
+  if(a.changedDetails.length){
+   const fields=Object.entries(a.fieldCounts).sort((x,y)=>y[1]-x[1]);
+   html+='<h3>Vilka uppgifter skiljer sig?</h3><p>Antal föremål/platser med skillnad per fält (en post kan förekomma i flera fält):</p><ul>'+fields.map(([k,n])=>'<li><b>'+ex(k)+'</b>: '+n+'</li>').join('')+'</ul>';
+   html+='<h3>Exempel på skillnader</h3><ul>'+a.changedDetails.slice(0,16).map(d=>'<li>'+ex(d.name)+' – '+d.fields.map(ex).join(', ')+'</li>').join('')+'</ul>';
+   html+='<p class="muted">Inga fältvärden skickas eller sparas av kontrollen. Den läser endast uppgifterna och visar namnen på fälten som skiljer sig.</p>';
+  }
+  for(const [name,arr] of errors)if(arr.length)html+='<p><b>'+ex(name)+' ('+arr.length+'):</b> '+arr.slice(0,8).map(ex).join(', ')+(arr.length>8?' …':'')+'</p>';
+ }
+ $('result').innerHTML=html;
+}
+
+let prepared=null;
+function assertPrepared(local, remote, c, comparison) {
+ if(!comparison.ok) throw Error('Registret skiljer sig från molnet. Ingen anslutning har gjorts.');
+ if(local.active)throw Error('Synkronisering är redan aktiverad på denna enhet.');
+ if(local.owner && local.owner!==c.owner)throw Error('Lokala registret är kopplat till ett annat molnkonto.');
+ const actual=new Set([...local.items.map(x=>'item:'+x.id),...local.places.map(x=>'location:'+x.id)]);
+ if(actual.size!==local.items.length+local.places.length)throw Error('Registret innehåller dubbla ID.');
+ if(local.pending.length!==actual.size)throw Error('Väntelistan innehåller ett annat antal poster än registret.');
+ const keys=new Set();
+ for(const row of local.pending){
+  if(!row || row.deleted || row.key!==row.kind+':'+row.id || !actual.has(row.key)||keys.has(row.key))
+   throw Error('Väntelistan innehåller ändringar som inte kan godkännas automatiskt.');
+  keys.add(row.key);
+ }
+ const remoteKeys=new Set();
+ for(const row of remote){
+  const key=row.kind+':'+row.record_id;
+  if(remoteKeys.has(key)||!Number.isFinite(Date.parse(row.changed_at)))throw Error('Ogiltiga eller dubbla molnversioner.');
+  remoteKeys.add(key);
+  if(!row.content?._deleted && !actual.has(key)) throw Error('Molnet innehåller en oväntad aktiv post.');
+  if(row.content?._deleted && actual.has(key))throw Error('Molnet markerar ett lokalt föremål som borttaget.');
+ }
+ if(local.items.length!==79||local.places.length!==14||comparison.images!==78)throw Error('Registrets storlek eller foton har ändrats. Kontrollera manuellt innan anslutning.');
+ return true;
+}
+function pendingKeyString(rows){
+ return JSON.stringify(rows.map(x=>[x.key,x.kind,x.id,x.deleted,x.changedAt,x.version]).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))));
+}
+function localKeyString(local){
+ return JSON.stringify({items:local.items,places:local.places});
+}
+function applyLocalMarkers(local,c,remote){
+ return new Promise((resolve,reject)=>{
+  const req=indexedDB.open('jans-verkstad-mobil');
+  req.onupgradeneeded=()=>{req.transaction.abort();reject(Error('Registret saknas på denna enhet.'))};
+  req.onerror=()=>reject(req.error||Error('Kunde inte öppna registret.'));
+  req.onsuccess=()=>{
+   const db=req.result;
+   if(!['register','pending','seen','syncmeta'].every(k=>db.objectStoreNames.contains(k))){
+    db.close();reject(Error('Denna appversion saknar en synkroniseringsdel.'));return;
+   }
+   let error=null, done=false;
+   const tx=db.transaction(['register','pending','seen','syncmeta'],'readwrite');
+   tx.oncomplete=()=>{db.close();resolve();};
+   tx.onerror=tx.onabort=()=>{db.close();reject(error||tx.error||Error('Säker anslutning misslyckades.'))};
+   const dReq=tx.objectStore('register').get('data');
+   const pReq=tx.objectStore('pending').getAll();
+   const aReq=tx.objectStore('syncmeta').get('active');
+   const oReq=tx.objectStore('syncmeta').get('owner');
+   let remaining=4;
+   const parts={};
+   for(const [key,r] of [['data',dReq],['pending',pReq],['active',aReq],['owner',oReq]]){
+    r.onsuccess=()=>{
+     parts[key]=r.result;
+     if(--remaining!==0||done)return;
+     done=true;
+     try{
+      const d=parts.data||{};
+      if(JSON.stringify({items:d.items,places:d.places})!==localKeyString(local)) throw Error('Det lokala registret har ändrats under kontrollen. Försök igen.');
+      if(pendingKeyString(parts.pending||[])!==pendingKeyString(local.pending))throw Error('Väntelistan har ändrats under kontrollen. Försök igen.');
+      if(parts.active)throw Error('Synkronisering har aktiverats från en annan sida.');
+      if(parts.owner && parts.owner!==c.owner)throw Error('Kontot har ändrats under kontrollen.');
+      tx.objectStore('seen').clear();
+      for(const row of remote)tx.objectStore('seen').put(row.changed_at,row.kind+':'+row.record_id);
+      tx.objectStore('pending').clear();
+      tx.objectStore('syncmeta').put(c.owner,'owner');
+      tx.objectStore('syncmeta').put(true,'active');
+     }catch(e){error=e;tx.abort();}
+    };
+   }
+  };
+ });
+}
+$('run').addEventListener('click',async()=>{
+ $('activation').hidden=true;prepared=null;$('outcome').textContent='';
+ $('run').disabled=true;$('result').textContent='';
+ try{
+  setProgress('Läser registret på iPhone …');
+  const local=await localData(),c=connection();
+  if(local.owner&&local.owner!==c.owner)throw Error('Molnkontot stämmer inte med det lokala registret.');
+  setProgress('Hämtar molnet (enbart läsning) …');
+  const remote=await remoteData(c);
+  setProgress('Jämför uppgifter och bildsignaturer …');
+  const comparison=await compare(local,remote);
+  display(comparison);
+  if(comparison.ok){assertPrepared(local,remote,c,comparison);prepared=true;$('activation').hidden=false;}
+  setProgress(comparison.ok?'Godkänd kontroll. Inga data har ändrats.':'Registren skiljer sig. Inga data har ändrats.');
+ }catch(e){
+  $('result').innerHTML='<p class="bad">'+ex(e.message||e)+' Inga data har ändrats.</p>';
+  setProgress('Kontroll avbruten.');
+ }finally{$('run').disabled=false;}
+});
+$('activate').addEventListener('click',async()=>{
+ if(!prepared)return;
+ if(!confirm('Vill du ansluta det lokala registret till molnet? Appen kommer att kontrollera allt igen, sedan nollställa de 93 väntande lokala markeringarna. Inga föremål eller molnposter kommer att skrivas över.'))return;
+ prepared=null;$('activation').hidden=true;
+ $('run').disabled=true;$('activate').disabled=true;$('outcome').textContent='';
+ try{
+  setProgress('Kontrollerar hela registret igen …');
+  const local=await localData(),c=connection(),remote=await remoteData(c);
+  const comparison=await compare(local,remote);
+  assertPrepared(local,remote,c,comparison);
+  setProgress('Alla uppgifter stämmer. Uppdaterar endast lokal synkroniseringsstatus …');
+  await applyLocalMarkers(local,c,remote);
+  const check=await localData();
+  if(!check.active||check.owner!==c.owner||check.pending.length!==0)throw Error('Anslutningen genomfördes men status behöver kontrolleras.');
+  $('result').innerHTML='<p class="good"><b>Klart!</b> Registret är säkert anslutet till molnet. 79 föremål och 14 platser är oförändrade. <b>Väntande poster: 0.</b> Inga molnposter har skrivits över av den här åtgärden.</p><p><a href="./">Öppna Jans verkstad och kontrollera status →</a></p>';
+  setProgress('Lokal anslutning klar. Ingen uppladdning har gjorts.');
+  $('outcome').textContent='Behåll den gamla appen och säkerhetskopian tills vi verifierat synkroniseringen.';
+ }catch(e){
+  $('result').innerHTML='<p class="bad"><b>Ingen anslutning bekräftad.</b> '+ex(e.message||e)+'. Gör ingen manuell synkronisering. Skicka en bild på felet.</p>';
+  setProgress('Avbruten eller behöver kontrolleras.');
+ }finally{$('run').disabled=false;$('activate').disabled=false;}
+});
+</script></body></html>
