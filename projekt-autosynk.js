@@ -8,6 +8,7 @@
   const BUCKET = 'jans-projekt';
   const FIELDS = ['title', 'status', 'tags', 'link', 'notes'];
   let running = false, rerun = false, timer = null, refresh = null;
+  const emptyRemovals = () => ({projects: {}, files: {}});
   const ENABLE_KEY = 'jans-projekt-autosynk-active-v1';
   function enabled() { return localStorage.getItem(ENABLE_KEY) === 'yes'; }
   function showControl() {
@@ -181,7 +182,7 @@
   }
   async function latest(c) {
     const list = await snapshots(c);
-    if (!list.length) return {name: null, parent: null, ancestors: [], projects: [], files: []};
+    if (!list.length) return {name: null, parent: null, ancestors: [], projects: [], files: [], removals: emptyRemovals()};
     const name = list[0].name;
     const response = await api(c, 'GET',
       'object/authenticated/' + BUCKET + '/' + c.uid + '/snapshots/' + name);
@@ -190,6 +191,9 @@
     const data = JSON.parse(raw);
     const meta = data?.autosync?.version === 1 ? data.autosync : {};
     return {name, parent: typeof meta.parent === 'string' ? meta.parent : null,
+      removals: meta.removals && typeof meta.removals === 'object' ? {
+        projects: meta.removals.projects || {}, files: meta.removals.files || {}
+      } : emptyRemovals(),
       ancestors: Array.isArray(meta.ancestors)
         ? meta.ancestors.filter(x => typeof x === 'string').slice(-100) : [],
       ...decode(data)};
@@ -253,6 +257,115 @@
     }
     return {all: [...merged.values()], remoteUpdates, needUpload};
   }
+  /* Endast uttryckligen bekräftade molnborttagningar får följas av andra enheter. */
+  async function applyConfirmedCloudRemovals(local, cloud, hashes) {
+    const pending = {projects: [], files: []};
+    for (const type of ['projects', 'files']) {
+      const remoteIds = new Set(cloud[type].map(x => x.id));
+      const removed = cloud.removals?.[type] || {};
+      for (const item of local[type]) {
+        if (remoteIds.has(item.id) || !own(removed, item.id)) continue;
+        if (hashes[type][item.id] !== removed[item.id])
+          throw Error('En lokal ändring krockar med borttagningen från molnet. Inga uppgifter togs bort.');
+        pending[type].push(item);
+      }
+    }
+    if (!pending.projects.length && !pending.files.length) return false;
+    if (!equalHashes(await fingerprints(await localData()), hashes))
+      throw Error('Projekten har ändrats under kontrollen. Försök igen.');
+    const db = await new Promise((yes, no) => {
+      const r = indexedDB.open(DB, 1);
+      r.onsuccess = () => yes(r.result);
+      r.onerror = () => no(r.error);
+    });
+    try {
+      await new Promise((yes, no) => {
+        const tx = db.transaction(['projects', 'files'], 'readwrite');
+        tx.oncomplete = yes;
+        tx.onabort = tx.onerror = () => no(tx.error || Error('Borttagningen avbröts.'));
+        let cancelled = false;
+        for (const type of ['projects', 'files']) {
+          const store = tx.objectStore(type);
+          for (const item of pending[type]) {
+            const req = store.get(item.id);
+            req.onsuccess = () => {
+              const now = req.result;
+              const same = now && (type === 'projects'
+                ? projectHash(now) === projectHash(item) && String(now.updated || '') === String(item.updated || '')
+                : now.projectId === item.projectId && now.name === item.name &&
+                  now.type === item.type && now.size === item.size);
+              if (!same) {
+                if (!cancelled) { cancelled = true; tx.abort(); }
+                return;
+              }
+              store.delete(item.id);
+            };
+          }
+        }
+      });
+    } finally { db.close(); }
+    if (typeof refresh === 'function') await refresh();
+    return true;
+  }
+  async function removeProjectEverywhere(projectId) {
+    if (!enabled()) throw Error('Aktivera automatisk synkronisering först.');
+    if (running) throw Error('En synkronisering pågår. Prova igen om en stund.');
+    if (!navigator.onLine) throw Error('Anslut till internet för att ta bort på alla enheter.');
+    running = true;
+    try {
+      status('Kontrollerar projektet i molnet …', 'working');
+      const c = connection();
+      const who = await fetch(c.url + '/auth/v1/user', {headers: headers(c), cache: 'no-store'});
+      if (!who.ok || (await who.json()).id !== c.uid)
+        throw Error('Logga in igen i verktygsregistret.');
+      const local = await localData(), cloud = await latest(c);
+      const lh = await fingerprints(local), rh = await fingerprints(cloud);
+      if (!equalHashes(lh, rh)) throw Error('Projekt och moln skiljer sig. Ingenting har raderats.');
+      const project = local.projects.find(p => p.id === projectId);
+      if (!project || !cloud.projects.some(p => p.id === projectId))
+        throw Error('Projektet finns inte i båda registren. Ingenting har raderats.');
+      const attachments = local.files.filter(f => f.projectId === projectId);
+      if (!confirm('Ta bort ”' + project.title + '” och ' + attachments.length +
+        ' bilagor från alla anslutna enheter?\nÄldre säkerhetskopior behålls.')) return false;
+      const next = {projects: cloud.projects.filter(p => p.id !== projectId),
+        files: cloud.files.filter(f => f.projectId !== projectId)};
+      const removals = {projects: {...cloud.removals.projects, [projectId]: rh.projects[projectId]},
+        files: {...cloud.removals.files}};
+      for (const file of attachments) removals.files[file.id] = rh.files[file.id];
+      const out = [];
+      for (const item of next.files)
+        out.push({id: item.id, projectId: item.projectId, name: item.name,
+          type: item.type, size: item.blob.size, created: item.created,
+          data: await encodeBase64(item.blob)});
+      const json = JSON.stringify({format: 'jans-verkstad-projekt-backup-v1',
+        autosync: {version: 1, parent: cloud.name,
+          ancestors: [...cloud.ancestors, ...(cloud.name ? [cloud.name] : [])].slice(-100),
+          removals},
+        exported: new Date().toISOString(), projects: next.projects, files: out});
+      const blob = new Blob([json], {type: 'application/json'});
+      if (blob.size > MAX) throw Error('Molnkopian är för stor. Ingenting har raderats.');
+      if (!equalHashes(await fingerprints(await localData()), lh))
+        throw Error('Något ändrades under kontrollen. Ingenting har raderats.');
+      const latestList = await snapshots(c);
+      if ((latestList[0]?.name || null) !== cloud.name)
+        throw Error('Molnet har uppdaterats. Kontrollera synkroniseringen först.');
+      const name = 'projekt-' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') +
+        '-' + crypto.randomUUID() + '.json';
+      status('Sparar den bekräftade borttagningen …', 'working');
+      await api(c, 'POST', 'object/' + BUCKET + '/' + c.uid + '/snapshots/' + name,
+        blob, 'application/json');
+      status('Borttagningen är sparad i molnet. Uppdaterar iPhonen …', 'working');
+      await applyConfirmedCloudRemovals(local, {...next, removals}, lh);
+      rerun = true;
+      return true;
+    } catch (e) {
+      status('Borttagningen stoppades: ' + e.message, 'error');
+      throw e;
+    } finally {
+      running = false;
+      if (rerun && ready()) schedule(500);
+    }
+  }
   function baselineKey(uid) {
     return 'jans-projekt-autosynk-v1:' + uid;
   }
@@ -266,7 +379,7 @@
     if (!who.ok) throw Error('Logga in igen i verktygsregistret.');
     const user = await who.json();
     if (user.id !== c.uid) throw Error('Molnkontot stämmer inte med inloggningen.');
-    const local = await localData(), originalHash = await fingerprints(local);
+    let local = await localData(), originalHash = await fingerprints(local);
     const cloud = await latest(c), cloudHash = await fingerprints(cloud);
     if (!ready()) return;
     let previous = null;
@@ -281,6 +394,9 @@
         !equalHashes(originalHash, cloudHash)) {
       throw Error('Molnkopian har en annan versionshistorik. ' +
         'Dina projekt skyddas; använd de manuella molnkopiorna för kontroll.');
+    }
+    if (await applyConfirmedCloudRemovals(local, cloud, originalHash)) {
+      local = await localData(); originalHash = await fingerprints(local);
     }
     const p = reconcile('projekt', local.projects, cloud.projects,
       originalHash.projects, cloudHash.projects, base.projects);
@@ -314,7 +430,8 @@
       const json = JSON.stringify({
         format: 'jans-verkstad-projekt-backup-v1',
         autosync: {version: 1, parent: cloud.name,
-          ancestors: [...cloud.ancestors, ...(cloud.name ? [cloud.name] : [])].slice(-100)},
+          ancestors: [...cloud.ancestors, ...(cloud.name ? [cloud.name] : [])].slice(-100),
+          removals: cloud.removals},
         exported: new Date().toISOString(),
         projects: merged.projects, files: attachments
       });
@@ -373,6 +490,8 @@
       else status('Automatisk synkronisering är avstängd på den här enheten. Aktivera när du är redo.', 'waiting');
     },
     changed: () => schedule(900),
+    enabled,
+    deleteProject: removeProjectEverywhere,
     check: () => {
       if (enabled()) schedule(0);
       else status('Aktivera automatisk synkronisering först.', 'waiting');
