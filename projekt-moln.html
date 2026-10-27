@@ -1,0 +1,96 @@
+<!doctype html><html lang="sv"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Projekt – molnkopior</title><style>:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#244735;background:#f5f7f1}body{margin:0}header{background:#234e3d;color:#fff;padding:20px}main{max-width:720px;margin:auto;padding:22px 17px 70px}.card{background:white;padding:20px;border:1px solid #d7e0d4;border-radius:14px;margin:16px 0}h1{font-size:29px}p{line-height:1.55}button,a.btn{display:block;box-sizing:border-box;width:100%;text-align:center;background:#234e3d;color:white;border:none;border-radius:9px;padding:16px;text-decoration:none;font:inherit;font-weight:650;cursor:pointer;margin:12px 0}button:disabled{opacity:.4}.warning{background:#fff4dc;border-left:4px solid #bb9142;padding:15px;border-radius:6px}#status{white-space:pre-wrap;overflow-wrap:anywhere}a{color:#235742}input{padding:12px;width:100%;box-sizing:border-box;border:1px solid #b5c9b8;border-radius:8px}code{overflow-wrap:anywhere}</style></head><body><header><b>Jans verkstad · Projekt & ritningar</b></header><main><a href="./projekt-ritningar.html">← Tillbaka till projekt</a><h1>Molnkopior</h1><p class="warning"><b>Första testversionen.</b> Filerna lagras privat i Supabase och påverkar inte verktygsregistret. Synkroniseringen är manuell. Gör alltid en separat projektsäkerhetskopia innan du laddar upp. Ladda inte upp från båda enheterna innan du kontrollerat att de har samma projekt.</p><div class="card"><h2>1. Kontrollera molnkopplingen</h2><p>Appen använder samma inloggade Supabase-konto som ditt verktygsregister. Den separata privata lagringsytan <code>jans-projekt</code> måste först vara skapad.</p><button id="check">Kontrollera anslutning</button><p id="status" role="status">Inte kontrollerad.</p></div><div class="card"><h2>2. Spara en molnkopia från denna enhet</h2><p>Skapar en tidsstämplad kopia av projekt, PDF och bilder. Inga befintliga molnfiler skrivs över. Högst 25 MB per kopia.</p><button id="upload" disabled>Skapa ny molnkopia</button></div><div class="card"><h2>3. Hämta molnkopia till en annan enhet</h2><p>Återställning tillåts bara om projektbiblioteket är tomt på den här enheten. Det skyddar redan registrerade projekt från att ersättas.</p><button id="download" disabled>Hämta senaste molnkopian</button></div><p><a href="./">Till verktygsregistret</a></p></main><script>
+'use strict';
+const $=id=>document.getElementById(id),MAX=25*1024*1024;
+let connection=null,account=null,db=null;
+function say(x){$('status').textContent=x;}
+function request(r){return new Promise((ok,no)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error||Error('Lagringsfel'));});}
+async function openDB(){
+ if(db)return db;
+ db=await new Promise((ok,no)=>{const r=indexedDB.open('jans-verkstad-projekt-v1',1);r.onupgradeneeded=()=>{let d=r.result;if(!d.objectStoreNames.contains('projects'))d.createObjectStore('projects',{keyPath:'id'});if(!d.objectStoreNames.contains('files')){let f=d.createObjectStore('files',{keyPath:'id'});f.createIndex('byProject','projectId',{unique:false});}};r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error);});return db;
+}
+async function getAll(store){const d=await openDB();return request(d.transaction(store,'readonly').objectStore(store).getAll());}
+function readConnect(){
+ let conf,session;
+ try{conf=JSON.parse(localStorage.getItem('jans-verkstad-supabase-v1'));session=JSON.parse(localStorage.getItem('jans-verkstad-auth-v1'));}catch{}
+ if(!conf?.url||!conf?.key||!session?.access_token||!session?.user?.id)throw Error('Molnanslutning eller inloggning saknas. Logga in under Molnsynkronisering i verktygsregistret och öppna sedan sidan igen.');
+ if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(conf.url))throw Error('Felaktig projektadress.');
+ return {url:conf.url,key:conf.key,token:session.access_token,uid:session.user.id};
+}
+function headers(c,type){return {apikey:c.key,Authorization:'Bearer '+c.token,...(type?{'Content-Type':type}:{})};}
+async function call(c,method,path,body,contentType){
+ const r=await fetch(c.url+'/storage/v1/'+path,{method,headers:headers(c,contentType),body,cache:'no-store'});
+ if(!r.ok){const err=(await r.text()).slice(0,350);throw Error('Molntjänsten svarade '+r.status+': '+err);}
+ return r;
+}
+async function snapshots(c){const r=await call(c,'POST','object/list/jans-projekt',JSON.stringify({prefix:c.uid+'/snapshots/',limit:100,offset:0,sortBy:{column:'name',order:'desc'}}),'application/json');return (await r.json()).filter(x=>/^projekt-\d{4}-\d\d-\d\dT\d\d-\d\d-\d\d-[a-f0-9-]+\.json$/.test(x.name)).sort((a,b)=>b.name.localeCompare(a.name));}
+function blobBase64(blob){return new Promise((ok,no)=>{let r=new FileReader;r.onload=()=>ok(String(r.result).split(',')[1]);r.onerror=()=>no(r.error);r.readAsDataURL(blob);});}
+function base64Blob(value,type){let s=atob(value),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return new Blob([a],{type:type||'application/octet-stream'});}
+$('check').onclick=async()=>{
+ try{
+  say('Kontrollerar …');
+  const c=readConnect();
+  const r=await fetch(c.url+'/auth/v1/user',{headers:headers(c)});
+  if(!r.ok)throw Error('Inloggningen har gått ut. Öppna verktygsregistret och logga in igen.');
+  let user=await r.json();if(user.id!==c.uid)throw Error('Inloggat konto stämmer inte.');
+  let ss=await snapshots(c);
+  connection=c;account=user.id;
+  $('upload').disabled=false;$('download').disabled=ss.length===0;
+  say('Ansluten till rätt konto.\nAntal molnkopior: '+ss.length+(ss.length?'\nSenaste: '+ss[0].name:'\nIngen kopia finns ännu.'));
+ }catch(e){connection=null;$('upload').disabled=$('download').disabled=true;say('Kontrollen misslyckades: '+e.message);}
+};
+$('upload').onclick=async()=>{
+ if(!connection)return;
+ const btn=$('upload');btn.disabled=true;
+ try{
+  const c=readConnect();if(c.uid!==account)throw Error('Kontot har ändrats.');
+  let projects=await getAll('projects'),files=await getAll('files');
+  if(!projects.length)throw Error('Inga projekt finns på denna enhet. Skapa eller återställ projekt först.');
+  const existing=await snapshots(c);
+  if(existing.length && !confirm('Det finns redan en molnkopia. Fortsätt bara om du har de senaste projekten på denna enhet. Skapa ny separat version?'))return;
+  say('Förbereder '+projects.length+' projekt och '+files.length+' bilagor …');
+  const attachments=[];
+  for(const f of files){attachments.push({id:f.id,projectId:f.projectId,name:f.name,type:f.type,size:f.size,created:f.created,data:await blobBase64(f.blob)});}
+  const body=JSON.stringify({format:'jans-verkstad-projekt-backup-v1',exported:new Date().toISOString(),projects,files:attachments});
+  const blob=new Blob([body],{type:'application/json'});
+  if(blob.size>MAX)throw Error('Kopian är '+Math.ceil(blob.size/1048576)+' MB. Gränsen är 25 MB. Ingen uppladdning gjordes.');
+  if(!confirm('Ladda upp '+projects.length+' projekt och '+files.length+' bilagor som en privat, tidsstämplad molnkopia ('+Math.ceil(blob.size/1024)+' kB)?'))return;
+  const name='projekt-'+new Date().toISOString().slice(0,19).replace(/:/g,'-')+'-'+crypto.randomUUID()+'.json';
+  say('Laddar upp privat kopia …');
+  await call(c,'POST','object/jans-projekt/'+c.uid+'/snapshots/'+name,blob,'application/json');
+  say('Molnkopian är sparad!\n'+name+'\nKontrollera nu från din andra enhet.');
+  $('download').disabled=false;
+ }catch(e){say('Ingen kopia kunde sparas: '+e.message);}finally{btn.disabled=false;}
+};
+$('download').onclick=async()=>{
+ if(!connection)return;
+ const btn=$('download');btn.disabled=true;
+ try{
+  const c=readConnect();if(c.uid!==account)throw Error('Kontot har ändrats.');
+  const localProjects=await getAll('projects'),localFiles=await getAll('files');
+  if(localProjects.length||localFiles.length)throw Error('Det finns redan lokala projekt eller filer. Ingen återställning gjordes. Exportera först en säkerhetskopia och undvik att ersätta projekt.');
+  const list=await snapshots(c);if(!list.length)throw Error('Inga molnkopior finns.');
+  const latest=list[0].name;
+  if(!confirm('Hämta senaste molnkopian '+latest+' till det TOMMA projektbiblioteket på denna enhet?'))return;
+  say('Hämtar senaste privata molnkopian …');
+  const response=await call(c,'GET','object/authenticated/jans-projekt/'+c.uid+'/snapshots/'+latest);
+  const raw=await response.text();if(raw.length>MAX*2)throw Error('Kopian är för stor.');
+  const data=JSON.parse(raw);
+  if(data.format!=='jans-verkstad-projekt-backup-v1'||!Array.isArray(data.projects)||!Array.isArray(data.files))throw Error('Molnkopian har fel format.');
+  const d=await openDB(),projectIds=new Set();
+  const ps=data.projects.map(p=>{if(typeof p.id!=='string'||!p.id||typeof p.title!=='string'||projectIds.has(p.id))throw Error('Ogiltiga eller dubbla projekt-ID.');projectIds.add(p.id);return {id:p.id,title:p.title.slice(0,160),status:['Idé','Planerat','Pågående','Färdigt'].includes(p.status)?p.status:'Idé',tags:String(p.tags||''),link:String(p.link||''),notes:String(p.notes||''),created:p.created,updated:p.updated};});
+  const fs=[];const ids=new Set();
+  for(const f of data.files){
+   if(typeof f.id!=='string'||ids.has(f.id)||!projectIds.has(f.projectId)||typeof f.data!=='string')throw Error('Ogiltiga bilagor.');
+   ids.add(f.id);const b=base64Blob(f.data,f.type);
+   if(b.size>MAX)throw Error('En bilaga är för stor.');
+   fs.push({id:f.id,projectId:f.projectId,name:String(f.name||'Bilaga'),type:String(f.type||''),size:b.size,created:f.created,blob:b});
+  }
+  const tx=d.transaction(['projects','files'],'readwrite');
+  const done=new Promise((ok,no)=>{tx.oncomplete=ok;tx.onerror=tx.onabort=()=>no(tx.error||Error('Lagringsfel'));});
+  for(const p of ps)tx.objectStore('projects').add(p);
+  for(const f of fs)tx.objectStore('files').add(f);
+  await done;
+  say('Molnkopian återställd: '+ps.length+' projekt, '+fs.length+' bilagor.\nÖppna Projekt & ritningar.');
+ }catch(e){say('Återställning stoppad: '+e.message);}finally{btn.disabled=false;}
+};
+</script></body></html>
