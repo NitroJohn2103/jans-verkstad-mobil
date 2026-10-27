@@ -19,6 +19,12 @@
     a.setAttribute('aria-label','Öppna Projekt och ritningar');
     a.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M7 12h10M7 16h7"/></svg><span>Projekt &amp; ritningar</span>';
     nav.appendChild(a);
+    var check=document.createElement('a');
+    check.href='./synk-kontroll.html';
+    check.className='jans-project-link jans-audit-link';
+    check.setAttribute('aria-label','Kontrollera molnregistret utan att ändra något');
+    check.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg><span>Säker molnkontroll</span>';
+    nav.appendChild(check);
   }
   document.addEventListener('DOMContentLoaded',function(){
     addProjectLink();
