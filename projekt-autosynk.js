@@ -151,13 +151,18 @@
   }
   async function latest(c) {
     const list = await snapshots(c);
-    if (!list.length) return {name: null, projects: [], files: []};
+    if (!list.length) return {name: null, parent: null, ancestors: [], projects: [], files: []};
     const name = list[0].name;
     const response = await api(c, 'GET',
       'object/authenticated/' + BUCKET + '/' + c.uid + '/snapshots/' + name);
     const raw = await response.text();
     if (raw.length > MAX * 2) throw Error('Molnkopian är för stor.');
-    return {name, ...decode(JSON.parse(raw))};
+    const data = JSON.parse(raw);
+    const meta = data?.autosync?.version === 1 ? data.autosync : {};
+    return {name, parent: typeof meta.parent === 'string' ? meta.parent : null,
+      ancestors: Array.isArray(meta.ancestors)
+        ? meta.ancestors.filter(x => typeof x === 'string').slice(-100) : [],
+      ...decode(data)};
   }
   function projectHash(p) {
     return JSON.stringify(FIELDS.map(k => String(p[k] || '')));
@@ -237,6 +242,16 @@
     let previous = null;
     try { previous = JSON.parse(localStorage.getItem(baselineKey(c.uid)) || 'null'); } catch (_) {}
     const base = previous?.version === 1 ? previous : {projects: {}, files: {}};
+    // Detect two devices creating distinct snapshots from the same parent.
+    // Without ancestry proof never silently accept an unrelated remote edit.
+    if (previous?.version === 1 && previous.cloud && cloud.name &&
+        previous.cloud !== cloud.name && cloud.parent !== previous.cloud &&
+        !cloud.ancestors.includes(previous.cloud) &&
+        !equalHashes(cloudHash, {projects: base.projects, files: base.files}) &&
+        !equalHashes(originalHash, cloudHash)) {
+      throw Error('Molnkopian har en annan versionshistorik. ' +
+        'Dina projekt skyddas; använd de manuella molnkopiorna för kontroll.');
+    }
     const p = reconcile('projekt', local.projects, cloud.projects,
       originalHash.projects, cloudHash.projects, base.projects);
     const f = reconcile('bilaga', local.files, cloud.files,
@@ -268,6 +283,8 @@
           created: item.created, data: await encodeBase64(item.blob)});
       const json = JSON.stringify({
         format: 'jans-verkstad-projekt-backup-v1',
+        autosync: {version: 1, parent: cloud.name,
+          ancestors: [...cloud.ancestors, ...(cloud.name ? [cloud.name] : [])].slice(-100)},
         exported: new Date().toISOString(),
         projects: merged.projects, files: attachments
       });
