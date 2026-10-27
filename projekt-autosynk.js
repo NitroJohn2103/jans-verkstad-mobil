@@ -8,6 +8,14 @@
   const BUCKET = 'jans-projekt';
   const FIELDS = ['title', 'status', 'tags', 'link', 'notes'];
   let running = false, rerun = false, timer = null, refresh = null;
+  const ENABLE_KEY = 'jans-projekt-autosynk-active-v1';
+  function enabled() { return localStorage.getItem(ENABLE_KEY) === 'yes'; }
+  function showControl() {
+    const b = $('autoSyncToggle');
+    if (b) b.textContent = enabled()
+      ? 'Pausa automatisk synkronisering'
+      : 'Aktivera automatisk synkronisering';
+  }
   const $ = id => document.getElementById(id);
   const own = (obj, key) => Object.prototype.hasOwnProperty.call(obj || {}, key);
 
@@ -18,7 +26,7 @@
     node.dataset.kind = kind || 'neutral';
   }
   function ready() {
-    return document.visibilityState !== 'hidden' && !$('editor')?.open;
+    return enabled() && document.visibilityState !== 'hidden' && !$('editor')?.open;
   }
   function request(req) {
     return new Promise((resolve, reject) => {
@@ -358,9 +366,30 @@
     timer = setTimeout(run, delay == null ? 900 : delay);
   }
   window.JansProjectAutoSync = {
-    start: fn => { refresh = fn; schedule(700); },
+    start: fn => {
+      refresh = fn;
+      showControl();
+      if (enabled()) schedule(700);
+      else status('Automatisk synkronisering är avstängd på den här enheten. Aktivera när du är redo.', 'waiting');
+    },
     changed: () => schedule(900),
-    check: () => schedule(0)
+    check: () => {
+      if (enabled()) schedule(0);
+      else status('Aktivera automatisk synkronisering först.', 'waiting');
+    },
+    toggle: () => {
+      if (enabled()) {
+        localStorage.removeItem(ENABLE_KEY);
+        clearTimeout(timer);
+        timer = null;
+        status('Automatisk synkronisering är pausad på den här enheten.', 'waiting');
+      } else {
+        localStorage.setItem(ENABLE_KEY, 'yes');
+        status('Automatisk synkronisering aktiverad. Kontrollerar molnet …', 'working');
+        schedule(0);
+      }
+      showControl();
+    }
   };
   window.addEventListener('online', () => schedule(500));
   window.addEventListener('focus', () => schedule(700));
