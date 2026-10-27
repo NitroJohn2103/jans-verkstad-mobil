@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#234e3d">
+<title>TEST – automatisk synkronisering – Jans verkstad</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#203329;background:#f5f5f0;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0}.wrap{max-width:950px;margin:auto;padding:18px 16px 70px}
+header{background:#234e3d;color:#fff;padding:18px max(16px,calc((100vw - 950px)/2 + 16px));display:flex;justify-content:space-between;align-items:center;gap:12px}
+header a{color:white;text-decoration:none;border:1px solid #8ba99b;padding:9px 12px;border-radius:9px;font-size:14px}
+header b{font-size:21px}.intro{margin:26px 0 18px}.eyebrow{color:#658573;font-size:12px;letter-spacing:.08em;font-weight:750;margin:0 0 8px}h1{font-size:clamp(25px,5vw,36px);line-height:1.2;margin:0 0 8px}h2{margin:0 0 10px;font-size:20px}p{line-height:1.5}.muted{color:#5f7065;font-size:14px}.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:20px 0}
+input,textarea,select{font:inherit;min-height:44px;border:1px solid #bac6bc;border-radius:9px;padding:10px;background:#fff;color:#22392b;width:100%}textarea{min-height:110px;resize:vertical}input[type=file]{padding:10px}
+.toolbar input{flex:1;min-width:170px}.toolbar select{max-width:180px}
+button,.button{cursor:pointer;border:none;border-radius:9px;font:inherit;font-weight:650;min-height:44px;padding:10px 15px;text-decoration:none;display:inline-flex;justify-content:center;align-items:center;gap:7px}
+.primary{background:#234e3d;color:#fff}.secondary{background:#e5eee8;color:#234e3d}.danger{background:#fbebea;color:#9c322a}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #68a4bb;outline-offset:2px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,265px),1fr));gap:14px}
+.card{background:white;border:1px solid #dce4dc;border-radius:15px;padding:18px;box-shadow:0 2px 8px #18271a0a}
+.card h3{font-size:19px;margin:10px 0 7px;overflow-wrap:anywhere}.card p{color:#536456;font-size:14px;margin:5px 0 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.tag{display:inline-block;border-radius:100px;background:#ebf1ec;color:#31553e;padding:5px 10px;font-size:12px;font-weight:700}
+.card .actions{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:8px}
+.empty{padding:42px 18px;text-align:center;border:1px dashed #aebdb0;border-radius:16px;background:white}
+.panel{background:white;border:1px solid #dce4dc;border-radius:15px;padding:18px;margin-top:24px}
+.note{background:#fff9e9;border-left:4px solid #b58d3e;padding:10px 14px;font-size:14px;line-height:1.5;border-radius:5px}
+dialog{border:0;border-radius:15px;max-width:min(610px,calc(100% - 20px));width:100%;max-height:91dvh;overflow:auto;padding:22px;background:#fff;color:#203329;box-shadow:0 20px 65px #0005}
+dialog::backdrop{background:#101c14a9}.formrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:block;font-size:14px;font-weight:700;margin:14px 0}.field input,.field textarea,.field select{display:block;margin-top:7px;font-weight:400}
+.dialogbuttons{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:20px}
+.filelist{list-style:none;padding:0;margin:15px 0}.filelist li{border:1px solid #e3e9e4;border-radius:10px;margin:8px 0;padding:11px;display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;overflow-wrap:anywhere}
+.filelist img{max-width:100%;max-height:320px;object-fit:contain;display:block;margin:9px auto;border-radius:8px}
+.filelink{color:#215d46;overflow-wrap:anywhere}.projectnote{white-space:pre-wrap;overflow-wrap:anywhere}.notice{color:#176345;font-size:14px;min-height:20px;margin-top:8px}
+.error{color:#a82926}#autoSyncStatus[data-kind="error"]{color:#a82926;font-weight:650}#autoSyncStatus[data-kind="good"]{color:#176345}#autoSyncStatus[data-kind="working"]{color:#234e3d}a{color:#215d46}small{font-size:12px}
+@media(max-width:540px){header b{font-size:17px}header a{font-size:13px}.formrow{grid-template-columns:1fr}.toolbar>button{flex:1}.card{padding:15px}dialog{padding:16px}}
+</style>
+</head>
+<body>
+<header><b>Jans verkstad · Synktest</b><a href="./">← Verktygsregistret</a></header>
+<main class="wrap">
+<section class="intro"><p class="eyebrow">IDÉER TILL FRAMTIDA BYGGEN</p><h1>Test av automatisk synkronisering</h1><p class="note"><b>Separat testmiljö.</b> Projekten och bilagorna på den här sidan sparas i en egen lokal databas och en separat molnmapp. Dina riktiga projekt, bilagor och molnkopior påverkas inte. Använd bara testprojekt här.</p><p class="muted">Skapa ett tillfälligt testprojekt på iPhone och öppna exakt samma testsida på Mac för att kontrollera synkroniseringen.</p></section>
+<div class="toolbar"><input id="search" type="search" placeholder="Sök projekt, material eller anteckning…" aria-label="Sök projekt"><select id="filter" aria-label="Filtrera status"><option value="">Alla statusar</option><option>Idé</option><option>Planerat</option><option>Pågående</option><option>Färdigt</option></select><button class="primary" id="add">＋ Nytt projekt</button></div>
+<p class="muted" id="count">Läser projekt …</p><section class="cards" id="cards" aria-label="Projekt"></section>
+<section class="panel"><h2>Automatisk molnsynkronisering</h2><p id="autoSyncStatus" class="muted" role="status" aria-live="polite">Kontrollerar molnet när sidan öppnas …</p><p class="muted">Nya projekt och bilagor synkroniseras när appen används och internet finns. Om samma uppgift ändrats på två enheter pausas synkroniseringen för att skydda dina uppgifter. Borttagningar behöver hanteras manuellt.</p><button class="secondary" id="autoSyncCheck" type="button">Kontrollera synkronisering nu</button></section>
+<section class="panel"><h2>Separat från ditt riktiga register</h2><p>Denna sida är bara för att testa automatisk synkronisering. Dina vanliga projekt och manuella molnkopior finns kvar på ordinarie sida.</p><a class="button secondary" href="./projekt-ritningar.html">Till mina riktiga projekt →</a></section>
+<section class="panel"><h2>Säkerhetskopiering</h2><p class="note"><b>Viktigt:</b> Det här är enbart testprojekt. Använd inte denna sida för viktig information. Testregistret och testmolnmappen är helt separata från din riktiga verkstad.</p><div class="toolbar"><button id="backup" class="secondary">↓ Exportera projekt med filer</button><label class="button secondary" for="restore">↑ Importera projekt</label><input id="restore" type="file" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0"></div><small>Projektens säkerhetskopia är separat från säkerhetskopian för verktygsregistret. Vid import behålls redan sparade projekt.</small><p id="message" class="notice" role="status"></p></section>
+</main>
+<script src="./test-projekt-autosynk.js"></script>
+<dialog id="editor"><form id="projectForm"><h2 id="formTitle">Nytt projekt</h2><input type="hidden" name="id"><label class="field">Projektnamn *<input name="title" required maxlength="160" placeholder="Till exempel: Låda i valnöt"></label><div class="formrow"><label class="field">Status<select name="status"><option>Idé</option><option>Planerat</option><option>Pågående</option><option>Färdigt</option></select></label><label class="field">Sökord / material<input name="tags" maxlength="240" placeholder="Valnöt, låda, sinkor"></label></div><label class="field">Länk till webbsida<input name="link" type="url" maxlength="2000" placeholder="https://..."></label><label class="field">Egna anteckningar<textarea name="notes" maxlength="12000" placeholder="Mått, material, idéer, vad som ska ändras ..."></textarea></label><label class="field">Bilder, skärmdumpar eller PDF (valfritt)<input type="file" id="attachments" accept="image/*,.pdf,application/pdf" multiple></label><p class="muted">Du kan lägga till fler filer när som helst. Max 25 MB per fil, högst 30 filer per projekt.</p><p id="newFileSummary" class="muted"></p><p id="formError" class="error" role="alert"></p><div class="dialogbuttons"><button type="button" class="secondary" id="cancelForm">Avbryt</button><button type="submit" class="primary" id="save">Spara projekt</button></div></form></dialog>
+<dialog id="details"><h2 id="detailsTitle"></h2><div id="detailsBody"></div><div class="dialogbuttons"><button class="danger" id="deleteProject">Ta bort</button><button class="secondary" id="closeDetails">Stäng</button><button class="primary" id="editProject">Redigera</button></div></dialog>
+<script>
+(function(){
+'use strict';
+var DB='jans-verkstad-projekt-test-v1', VERSION=1, MAX=25*1024*1024, db, current=null, urls=[];
+var $=function(id){return document.getElementById(id)};
+function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(s){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]})}
+function message(t,error){$('message').textContent=t;$('message').className=error?'error':'notice'}
+function request(r){return new Promise(function(resolve,reject){r.onsuccess=function(){resolve(r.result)};r.onerror=function(){reject(r.error||Error('Databasfel'))}})}
+function transaction(store,mode,fn){return new Promise(function(resolve,reject){var t=db.transaction(store,mode),result;try{result=fn(t)}catch(e){t.abort();reject(e);return}t.oncomplete=function(){resolve(result)};t.onerror=t.onabort=function(){reject(t.error||Error('Kunde inte spara'))}})}
+function get(store,id){return request(db.transaction(store,'readonly').objectStore(store).get(id))}
+function all(store){return request(db.transaction(store,'readonly').objectStore(store).getAll())}
+function byProject(id){return request(db.transaction('files','readonly').objectStore('files').index('byProject').getAll(id))}
+function validLink(s){if(!s)return '';try{var u=new URL(s);return /^https?:$/.test(u.protocol)?u.href:''}catch(e){return ''}}
+function bytes(n){return n>=1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.ceil(n/1024))+' kB'}
+function freeUrls(){urls.forEach(function(u){URL.revokeObjectURL(u)});urls=[]}
+function objectUrl(b){var u=URL.createObjectURL(b);urls.push(u);return u}
+async function render(){
+ try{
+ var projects=await all('projects'),fs=await all('files'),counts={};
+ fs.forEach(function(f){counts[f.projectId]=(counts[f.projectId]||0)+1});
+ var q=$('search').value.trim().toLocaleLowerCase('sv'),filter=$('filter').value;
+ projects=projects.filter(function(p){return (!filter||p.status===filter)&&[p.title,p.tags,p.notes,p.link].join(' ').toLocaleLowerCase('sv').includes(q)}).sort(function(a,b){return b.updated.localeCompare(a.updated)});
+ $('count').textContent=projects.length+' projekt';
+ $('cards').innerHTML=projects.length?projects.map(function(p){
+ return '<article class="card"><span class="tag">'+esc(p.status)+'</span><h3>'+esc(p.title)+'</h3>'+
+ (p.tags?'<p><b>Material:</b> '+esc(p.tags)+'</p>':'')+
+ (p.notes?'<p>'+esc(p.notes.slice(0,170))+(p.notes.length>170?' …':'')+'</p>':'')+
+ '<div class="actions"><small>'+((counts[p.id]||0))+' fil(er)</small><button type="button" class="secondary open" data-id="'+esc(p.id)+'">Öppna →</button></div></article>'}).join(''):'<div class="empty"><h2>Inga projekt ännu</h2><p>Skapa ditt första projekt och spara en bild, PDF eller en länk.</p></div>';
+ }catch(e){message('Kunde inte läsa projekt: '+e.message,true)}
+}
+function formOpen(p){
+ $('projectForm').reset();$('formError').textContent='';$('newFileSummary').textContent='';
+ var f=$('projectForm').elements;
+ f.namedItem('id').value=p?p.id:'';
+ f.namedItem('title').value=p?p.title:'';
+ f.namedItem('status').value=p?p.status:'Idé';
+ f.namedItem('tags').value=p?p.tags:'';
+ f.namedItem('link').value=p?p.link:'';
+ f.namedItem('notes').value=p?p.notes:'';
+ $('formTitle').textContent=p?'Redigera projekt':'Nytt projekt';
+ $('editor').showModal();
+}
+async function details(id){
+ try{
+ current=await get('projects',id);if(!current)return;
+ var fs=await byProject(id);freeUrls();
+ $('detailsTitle').textContent=current.title;
+ var h='<p><span class="tag">'+esc(current.status)+'</span></p>';
+ if(current.tags)h+='<p><b>Material/sökord:</b> '+esc(current.tags)+'</p>';
+ if(current.notes)h+='<p class="projectnote">'+esc(current.notes)+'</p>';
+ if(validLink(current.link))h+='<p><a class="filelink" href="'+esc(validLink(current.link))+'" rel="noopener noreferrer" target="_blank">Öppna sparad webbsida ↗</a></p>';
+ h+='<h3>Bilder och ritningar ('+fs.length+')</h3>';
+ h+=fs.length?'<ul class="filelist">'+fs.map(function(f){
+ var url=objectUrl(f.blob),isImg=(f.type||'').startsWith('image/');
+ return '<li><div style="flex:1;min-width:190px"><b>'+esc(f.name)+'</b><small> · '+bytes(f.size)+'</small>'+
+ (isImg?'<a href="'+esc(url)+'" target="_blank" rel="noopener"><img src="'+esc(url)+'" alt="'+esc(f.name)+'"></a>':'')+
+ '</div><a class="button secondary" href="'+esc(url)+'" target="_blank" rel="noopener" download="'+esc(f.name)+'">Öppna / hämta</a><button type="button" class="danger remove-file" data-id="'+esc(f.id)+'" aria-label="Ta bort fil '+esc(f.name)+'">×</button></li>';
+ }).join('')+'</ul>':'<p class="muted">Inga filer ännu. Välj Redigera för att lägga till.</p>';
+ $('detailsBody').innerHTML=h;
+ if(!$('details').open)$('details').showModal();
+ }catch(e){message('Kunde inte öppna projekt: '+e.message,true)}
+}
+async function save(e){
+ e.preventDefault();var btn=$('save');btn.disabled=true;$('formError').textContent='';
+ try{
+ var f=$('projectForm').elements,id=f.namedItem('id').value,existing=id?await get('projects',id):null;
+ var title=f.namedItem('title').value.trim(),link=f.namedItem('link').value.trim(),files=Array.from($('attachments').files||[]);
+ if(!title)throw Error('Ange projektnamn.');
+ if(link&&!validLink(link))throw Error('Ange en vanlig http- eller https-länk.');
+ if(files.some(function(x){return x.size>MAX}))throw Error('En fil är större än 25 MB.');
+ if(files.some(function(x){return !(x.type.startsWith('image/')||x.type==='application/pdf'||/\.pdf$/i.test(x.name))}))throw Error('Välj bara bilder eller PDF.');
+ if(existing&&(await byProject(id)).length+files.length>30||files.length>30)throw Error('Högst 30 bilagor per projekt.');
+ var now=new Date().toISOString(),p={id:id||crypto.randomUUID(),title:title,status:f.namedItem('status').value,tags:f.namedItem('tags').value.trim(),link:validLink(link),notes:f.namedItem('notes').value.trim(),created:existing?existing.created:now,updated:now};
+ await transaction(['projects','files'],'readwrite',function(t){
+ t.objectStore('projects').put(p);files.forEach(function(file){t.objectStore('files').put({id:crypto.randomUUID(),projectId:p.id,name:file.name,type:file.type||(/\.pdf$/i.test(file.name)?'application/pdf':'application/octet-stream'),size:file.size,created:now,blob:file})});
+ });
+ $('editor').close();await render();if(current&&current.id===p.id)await details(p.id);
+ message('Projektet är sparat på den här enheten.');if(window.JansProjectAutoSync)window.JansProjectAutoSync.changed();
+ }catch(e){$('formError').textContent=e.message}finally{btn.disabled=false}
+}
+async function removeFile(id){
+ if(!confirm('Ta bort den här filen från projektet?'))return;
+ try{await transaction('files','readwrite',function(t){t.objectStore('files').delete(id)});await details(current.id);await render();message('Filen är borttagen.');if(window.JansProjectAutoSync)window.JansProjectAutoSync.changed()}catch(e){message(e.message,true)}
+}
+async function deleteProject(){
+ if(!current||!confirm('Vill du verkligen ta bort projektet och alla dess PDF- och bildfiler?'))return;
+ try{
+ var id=current.id,files=await byProject(id);
+ await transaction(['projects','files'],'readwrite',function(t){t.objectStore('projects').delete(id);files.forEach(function(f){t.objectStore('files').delete(f.id)})});
+ $('details').close();current=null;freeUrls();await render();message('Projektet har tagits bort.');if(window.JansProjectAutoSync)window.JansProjectAutoSync.changed();
+ }catch(e){message(e.message,true)}
+}
+function base64(blob){return new Promise(function(resolve,reject){var r=new FileReader;r.onload=function(){resolve(String(r.result).split(',')[1])};r.onerror=function(){reject(r.error)};r.readAsDataURL(blob)})}
+function from64(s,type){var bin=atob(s),arr=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);return new Blob([arr],{type:type||'application/octet-stream'})}
+async function backup(){
+ var btn=$('backup');btn.disabled=true;
+ try{
+ var p=await all('projects'),files=await all('files'),out=[];
+ for(var i=0;i<files.length;i++){var f=files[i];out.push({id:f.id,projectId:f.projectId,name:f.name,type:f.type,size:f.size,created:f.created,data:await base64(f.blob)})}
+ var json=JSON.stringify({format:'jans-verkstad-projekt-backup-v1',exported:new Date().toISOString(),projects:p,files:out});
+ var url=URL.createObjectURL(new Blob([json],{type:'application/json'})),a=document.createElement('a');
+ a.href=url;a.download='jans-projekt-ritningar-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},60000);
+ message('Säkerhetskopian är skapad. Spara den i Filer/iCloud Drive.');
+ }catch(e){message('Exporten misslyckades: '+e.message,true)}finally{btn.disabled=false}
+}
+async function restore(file){
+ if(!file)return;
+ try{
+ if(file.size>250*1024*1024)throw Error('Filen är för stor för import.');
+ var data=JSON.parse(await file.text());
+ if(data.format!=='jans-verkstad-projekt-backup-v1'||!Array.isArray(data.projects)||!Array.isArray(data.files))throw Error('Detta är inte en projektsäkerhetskopia.');
+ if(!confirm('Importera '+data.projects.length+' projekt och '+data.files.length+' filer? Befintliga projekt kommer att behållas.'))return;
+ var existing=new Set((await all('projects')).map(function(p){return p.id})),newIds=new Set(),ps=[];
+ data.projects.forEach(function(p){if(p&&typeof p.id==='string'&&typeof p.title==='string'&&p.id.length<200&&!existing.has(p.id)&&!newIds.has(p.id)){ps.push({id:p.id,title:p.title.slice(0,160),status:['Idé','Planerat','Pågående','Färdigt'].includes(p.status)?p.status:'Idé',tags:String(p.tags||'').slice(0,240),link:validLink(p.link||''),notes:String(p.notes||'').slice(0,12000),created:p.created||new Date().toISOString(),updated:p.updated||new Date().toISOString()});newIds.add(p.id)}});
+ var fs=[];
+ for(var i=0;i<data.files.length;i++){var f=data.files[i];if(!f||!newIds.has(f.projectId)||typeof f.data!=='string'||typeof f.id!=='string')continue;
+ var blob=from64(f.data,f.type);if(blob.size>MAX)throw Error('Säkerhetskopian innehåller en för stor fil.');
+ fs.push({id:f.id,projectId:f.projectId,name:String(f.name||'Bilaga').slice(0,250),type:f.type||'application/pdf',size:blob.size,created:f.created||new Date().toISOString(),blob:blob});
+ }
+ var existingFiles=new Set((await all('files')).map(function(x){return x.id}));
+ await transaction(['projects','files'],'readwrite',function(t){ps.forEach(function(p){t.objectStore('projects').put(p)});fs.filter(function(f){return !existingFiles.has(f.id)}).forEach(function(f){t.objectStore('files').put(f)})});
+ await render();message('Importerade '+ps.length+' nya projekt. Befintliga projekt ändrades inte.');if(window.JansProjectAutoSync)window.JansProjectAutoSync.changed();
+ }catch(e){message('Kunde inte importera: '+e.message,true)}
+}
+$('add').onclick=function(){current=null;formOpen(null)};
+$('cancelForm').onclick=function(){$('editor').close()};
+$('projectForm').addEventListener('submit',save);
+$('attachments').onchange=function(){$('newFileSummary').textContent=Array.from(this.files).map(function(f){return f.name+' ('+bytes(f.size)+')'}).join(' · ')};
+$('search').oninput=render;$('filter').onchange=render;
+$('cards').onclick=function(e){var b=e.target.closest('.open');if(b)details(b.dataset.id)};
+$('closeDetails').onclick=function(){$('details').close();freeUrls()};
+$('editProject').onclick=function(){var p=current;$('details').close();freeUrls();formOpen(p)};
+$('deleteProject').onclick=deleteProject;
+$('detailsBody').onclick=function(e){var b=e.target.closest('.remove-file');if(b)removeFile(b.dataset.id)};
+$('backup').onclick=backup;$('restore').onchange=async function(){await restore(this.files[0]);this.value=''};
+$('details').addEventListener('close',freeUrls);
+$('autoSyncCheck').onclick=function(){if(window.JansProjectAutoSync)window.JansProjectAutoSync.check()};
+try{
+ var r=indexedDB.open(DB,VERSION);
+ r.onupgradeneeded=function(){var d=r.result;if(!d.objectStoreNames.contains('projects'))d.createObjectStore('projects',{keyPath:'id'});if(!d.objectStoreNames.contains('files')){var s=d.createObjectStore('files',{keyPath:'id'});s.createIndex('byProject','projectId',{unique:false})}};
+ r.onerror=function(){message('Kan inte öppna lokal lagring på den här enheten.',true)};
+ r.onsuccess=function(){db=r.result;render();if(window.JansProjectAutoSync)window.JansProjectAutoSync.start(render)};
+}catch(e){message('Lagring stöds inte i den här webbläsaren: '+e.message,true)}
+})();
+</script>
+</body></html>
