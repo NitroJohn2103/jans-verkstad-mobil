@@ -25,7 +25,8 @@ self.addEventListener("fetch", event => {
     event.respondWith(fetch(request, {cache:"no-store"}).then(response => {
       if (response.ok) {
         const key = url.origin + url.pathname;
-        event.waitUntil(caches.open(CACHE).then(cache => cache.put(key,response.clone())));
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE).then(cache => cache.put(key,copy)));
       }
       return response;
     }).catch(async () => {
