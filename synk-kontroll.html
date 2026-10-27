@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#234e3d"><title>Säker molnkontroll – Jans verkstad</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#243e32;background:#f4f6f0}*{box-sizing:border-box}body{margin:0}
+header{background:#234e3d;color:#fff;padding:20px 16px}header div,main{max-width:740px;margin:0 auto}
+header b{font-size:19px}a{color:#215d47}header a{color:#fff;display:block;margin-top:10px}
+main{padding:23px 17px 80px}h1{font-size:29px;margin:8px 0 10px}h2{font-size:20px;margin:20px 0 6px}
+p{line-height:1.6}.muted{color:#647568}.card{background:#fff;border:1px solid #d7e1d8;border-radius:15px;padding:20px;margin-top:17px}
+button{background:#234e3d;color:#fff;border:0;border-radius:10px;padding:14px 18px;font:inherit;font-weight:700;cursor:pointer;width:100%;min-height:52px}button:disabled{opacity:.55}
+.warn{background:#fff4d8;border-left:4px solid #b48d40;padding:11px 15px;border-radius:5px}
+.good{background:#ecf5ef;border-left:4px solid #347651;padding:11px 15px;border-radius:5px}
+.bad{background:#fdeeee;border-left:4px solid #bd4040;padding:11px 15px;border-radius:5px}
+#result{overflow-wrap:anywhere}ul{padding-left:22px;line-height:1.7}code{font-size:12px}
+</style></head><body>
+<header><div><b>Jans verkstad · Säkerhetskontroll</b><a href="./">← Tillbaka till verktygsregistret</a></div></header>
+<main>
+<p class="muted">ENDAST LÄSNING · INGA ÄNDRINGAR</p>
+<h1>Jämför med molnet</h1>
+<p>Här kontrolleras det lokala verktygsregistret mot ditt inloggade Supabase-konto. Kontroll görs av ID, namn, plats, antal, kategorier, anteckningar, datum och bildsignaturer.</p>
+<div class="card"><p class="warn">Den här sidan gör <b>inga ändringar</b> i verktygsregistret, väntelistan eller molnet. Fortsätt inte med manuell synkronisering även om kontrollen är godkänd. Vi behöver därefter göra en säker, lokal anslutning.</p>
+<button id="run">Kontrollera registren (skrivskyddat)</button>
+<p id="progress" class="muted" role="status" aria-live="polite"></p><div id="result"></div></div>
+<div class="card"><h2>Varför gör vi detta?</h2><p>Du har tidigare återställt 79 föremål och 14 platser i en ny installation. Appen visar därför 93 väntande poster. Vi jämför dessa med motsvarande molnposter innan de kan markeras som synkroniserade.</p></div>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const ex=t=>String(t??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
+const setProgress=t=>{$('progress').textContent=t;};
+const getRequest=r=>new Promise((ok,fail)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>fail(r.error||Error('Läsfel'));});
+async function localData(){
+ const db=await new Promise((ok,fail)=>{const r=indexedDB.open('jans-verkstad-mobil');r.onsuccess=()=>ok(r.result);r.onerror=()=>fail(r.error||Error('Kunde inte öppna registret'));r.onupgradeneeded=()=>{r.transaction.abort();fail(Error('Register saknas på den här enheten. Öppna kontrollen inifrån Jans verkstad NY.'));};});
+ try{
+  if(!db.objectStoreNames.contains('register'))throw Error('Registret saknas.');
+  const tx=db.transaction(['register',...['pending','syncmeta'].filter(x=>db.objectStoreNames.contains(x))],'readonly');
+  const d=await getRequest(tx.objectStore('register').get('data'));
+  const pending=db.objectStoreNames.contains('pending')?await getRequest(tx.objectStore('pending').getAll()):[];
+  const active=db.objectStoreNames.contains('syncmeta')?await getRequest(tx.objectStore('syncmeta').get('active')):false;
+  const owner=db.objectStoreNames.contains('syncmeta')?await getRequest(tx.objectStore('syncmeta').get('owner')):null;
+  if(!d||!Array.isArray(d.items)||!Array.isArray(d.places))throw Error('Registret saknas eller har fel format.');
+  return {items:d.items,places:d.places,pending:pending||[],active:!!active,owner:owner||null};
+ }finally{db.close();}
+}
+function connection(){
+ let settings,session;
+ try{settings=JSON.parse(localStorage.getItem('jans-verkstad-supabase-v1')||'null');session=JSON.parse(localStorage.getItem('jans-verkstad-auth-v1')||'null');}catch{}
+ if(!settings?.url||!settings?.key)throw Error('Molnanslutning saknas på den här sidan. Öppna kontrollen från menyn i Jans verkstad NY.');
+ if(!session?.access_token||!session?.user?.id)throw Error('Inloggningen saknas på den här sidan. Öppna kontrollen från Jans verkstad NY där du är inloggad.');
+ if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(settings.url))throw Error('Molnadressen är inte giltig.');
+ return {url:settings.url,key:settings.key,token:session.access_token,owner:session.user.id};
+}
+async function remoteData(c){
+ const records=[];
+ for(let offset=0;offset<30000;offset+=500){
+  const qs=new URLSearchParams({select:'kind,record_id,content,changed_at',owner_id:'eq.'+c.owner,order:'kind.asc,record_id.asc',limit:'500',offset:String(offset)});
+  const response=await fetch(c.url+'/rest/v1/verkstad_records?'+qs.toString(),{method:'GET',cache:'no-store',headers:{apikey:c.key,Authorization:'Bearer '+c.token,Accept:'application/json'}});
+  if(!response.ok){if(response.status===401||response.status===403)throw Error('Inloggningen behöver förnyas i Jans verkstad NY.');throw Error('Kunde inte läsa molnet (HTTP '+response.status+').');}
+  const batch=await response.json();if(!Array.isArray(batch))throw Error('Oväntat svar från molnet.');
+  records.push(...batch);if(batch.length<500)return records;
+ }
+ throw Error('Oväntat stort molnregister.');
+}
+function canonical(o){
+ const ignore=new Set(['id','photo','photo_path','photo_signature','_deleted']);
+ return JSON.stringify(Object.keys(o||{}).filter(k=>!ignore.has(k)).sort().map(k=>[k,o[k]]));
+}
+async function photoHash(s){
+ const bytes=new TextEncoder().encode(s);
+ const digest=await crypto.subtle.digest('SHA-256',bytes);
+ return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+async function compare(local,remote){
+ const cloud=new Map(),errors=[],missing=[],extra=[],changed=[],photoErrors=[];
+ let duplicates=0,tombstones=0,images=0;
+ for(const r of remote){
+  if(!['item','location'].includes(r.kind)||typeof r.record_id!=='string')throw Error('Molnet innehåller okända poster.');
+  const key=r.kind+':'+r.record_id;
+  if(cloud.has(key)){duplicates++;continue;}
+  if(r.content?._deleted){tombstones++;continue;}
+  cloud.set(key,r);
+ }
+ const ls=new Map();
+ for(const item of local.items){if(!item?.id)throw Error('Lokalt föremål saknar ID.');const k='item:'+item.id;if(ls.has(k))errors.push('Dubblett lokalt: '+item.name);ls.set(k,{...item,kind:'item'});}
+ for(const place of local.places){if(!place?.id)throw Error('Lokal plats saknar ID.');const k='location:'+place.id;if(ls.has(k))errors.push('Dubblett lokalt: '+place.name);ls.set(k,{...place,kind:'location'});}
+ for(const [key,item] of ls){
+  const r=cloud.get(key);
+  if(!r){missing.push(item.name||key);continue;}
+  if(canonical(item)!==canonical(r.content))changed.push(item.name||key);
+  if(item.kind==='item'){
+   const photo=item.photo||null;
+   const sig=r.content?.photo_signature||null;
+   const path=r.content?.photo_path||null;
+   if(!photo&&(!sig&&!path))continue;
+   if(!photo||!sig||!path){photoErrors.push(item.name||key);continue;}
+   images++;
+   if(await photoHash(photo)!==sig)photoErrors.push(item.name||key);
+  }
+ }
+ for(const [key,r] of cloud)if(!ls.has(key))extra.push(r.content?.name||key);
+ return {localItems:local.items.length,localPlaces:local.places.length,cloudItems:[...cloud.values()].filter(x=>x.kind==='item').length,cloudPlaces:[...cloud.values()].filter(x=>x.kind==='location').length,pending:local.pending.length,active:local.active,localOwner:local.owner,remoteOwner:cloud.size?true:false,duplicates,tombstones,images,errors,missing,extra,changed,photoErrors,ok:duplicates===0&&errors.length===0&&missing.length===0&&extra.length===0&&changed.length===0&&photoErrors.length===0&&tombstones===0&&ls.size===cloud.size};
+}
+function display(a){
+ const errors=[['Saknas i molnet',a.missing],['Endast i molnet',a.extra],['Olika uppgifter',a.changed],['Olika bildsignaturer',a.photoErrors],['Lokala problem',a.errors]];
+ let html='<p><b>På enheten:</b> '+a.localItems+' föremål och '+a.localPlaces+' platser<br><b>I molnet:</b> '+a.cloudItems+' föremål och '+a.cloudPlaces+' platser<br><b>Väntande lokala poster:</b> '+a.pending+'<br><b>Kontrollerade fotografier:</b> '+a.images+'</p>';
+ if(a.ok)html+='<p class="good"><b>Godkänd jämförelse!</b> Alla föremål, platser och bildsignaturer som kontrollerats överensstämmer. <b>Synkronisering har INTE aktiverats.</b> Skicka en bild av resultatet i chatten, så gör vi nästa säkra steg.</p>';
+ else{
+  html+='<p class="bad"><b>Registren skiljer sig åt.</b> Synkronisera inte. Skicka en bild på resultatet så går vi igenom avvikelserna.</p>';
+  if(a.duplicates||a.tombstones)html+='<p>Dubbletter: '+a.duplicates+' · Molnposter markerade borttagna: '+a.tombstones+'</p>';
+  for(const [name,arr] of errors)if(arr.length)html+='<p><b>'+ex(name)+' ('+arr.length+'):</b> '+arr.slice(0,8).map(ex).join(', ')+(arr.length>8?' …':'')+'</p>';
+ }
+ $('result').innerHTML=html;
+}
+$('run').addEventListener('click',async()=>{
+ $('run').disabled=true;$('result').textContent='';
+ try{
+  setProgress('Läser registret på iPhone …');const local=await localData();
+  const c=connection();
+  if(local.owner&&local.owner!==c.owner)throw Error('Denna enhets molnägare skiljer sig från inloggat konto. Inga ändringar har gjorts.');
+  setProgress('Hämtar uppgifter från molnet – endast läsning …');const remote=await remoteData(c);
+  setProgress('Jämför föremål, platser och bildsignaturer …');
+  const comparison=await compare(local,remote);
+  display(comparison);setProgress('Kontrollen är klar. Inga data har ändrats.');
+ }catch(e){$('result').innerHTML='<p class="bad"><b>Kontrollen kunde inte slutföras.</b> '+ex(e?.message||e)+'. Ingen data har ändrats.</p>';setProgress('Avbruten – endast läsning.');}
+ finally{$('run').disabled=false;}
+});
+</script></body></html>
