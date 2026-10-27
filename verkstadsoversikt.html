@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#234e3d">
+<title>Registerlista och Festool-samling – Jans verkstad</title>
+<link rel="icon" href="./jans-hantverk-256.png?v=20261027b">
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#244335;background:#f4f6ef;font-synthesis:none}
+*{box-sizing:border-box}
+body{margin:0}
+a{color:#215b45}
+button,input,select{font:inherit}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #86bfa7;outline-offset:2px}
+.top{background:#234e3d;color:white}
+.top .inner{max-width:1060px;margin:auto;padding:19px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.top strong{font-size:22px;line-height:1.2}
+.top a{color:white;text-decoration:none;border:1px solid #96b2a6;padding:11px 14px;border-radius:10px}
+main{max-width:1060px;margin:auto;padding:29px 18px 80px}
+.eyebrow{font-size:12px;letter-spacing:.16em;color:#708a77;font-weight:750}
+h1{font-size:clamp(26px,5.2vw,39px);margin:9px 0 11px;color:#213f31}
+p{line-height:1.55}
+.muted{color:#607266}
+.tabs{display:flex;gap:9px;flex-wrap:wrap;margin:22px 0}
+.tabs button,.action{border:1px solid #cbdacb;border-radius:11px;background:white;color:#234e3d;padding:13px 17px;font-weight:700;min-height:48px}
+.tabs button[aria-selected=true],.action.main{background:#234e3d;color:white;border-color:#234e3d}
+.panel{background:white;border:1px solid #d8e3d7;border-radius:17px;padding:21px;margin-top:16px;box-shadow:0 2px 10px #243c2710}
+.bar{display:flex;flex-wrap:wrap;align-items:end;gap:12px}
+.field{display:block;font-size:13px;font-weight:750;color:#405b49;flex:1;min-width:145px}
+.field input,.field select{margin-top:7px;border:1px solid #becebf;border-radius:10px;min-height:47px;background:white;color:#243d30;padding:10px;width:100%}
+.summary{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.summary span{display:inline-block;padding:10px 13px;background:#eaf1e8;color:#264834;border-radius:11px;font-size:13px;font-weight:700}
+.status{padding:13px 15px;border-radius:11px;background:#ebf2ec;color:#234e3d;line-height:1.5}
+.status.error{color:#9c302c;background:#fff0ef}
+.tablewrap{max-width:100%;overflow-x:auto;border:1px solid #dae5db;border-radius:12px;margin-top:16px}
+table{width:100%;border-collapse:collapse;table-layout:fixed;min-width:550px}
+thead{background:#edf3ed}
+th,td{text-align:left;border-bottom:1px solid #e5eae5;padding:11px 12px;overflow-wrap:anywhere;font-size:13px;vertical-align:top}
+th:nth-child(1){width:36%}th:nth-child(2){width:20%}th:nth-child(3){width:33%}th:nth-child(4){width:11%;text-align:right}
+td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:0}
+.sectiontitle{margin:0 0 12px}
+.festool-lead{background:#eef6e7;border:1px solid #c8debe;border-radius:15px;padding:20px;margin-bottom:16px}
+.festool-lead b{font:600 25px Georgia,serif;color:#235635}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0 17px}
+.filters button{border:1px solid #cadac7;background:white;border-radius:999px;padding:9px 13px;color:#2a5b3b;font-size:13px;font-weight:700}
+.filters button[aria-pressed=true]{background:#286443;color:white;border-color:#286443}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:15px}
+.item{border:1px solid #dce6d9;background:#fff;border-radius:15px;overflow:hidden;text-align:left;color:inherit;padding:0;min-width:0}
+.item .photo{height:172px;background:#e5eae1;display:flex;align-items:center;justify-content:center;color:#8a9986;font-size:46px}
+.item img{height:100%;width:100%;object-fit:contain}
+.item .data{padding:14px}
+.item strong{font-size:17px;display:block}
+.item small{display:block;color:#617162;margin-top:6px;line-height:1.45}
+.item .tag{display:inline-block;background:#ecf4e8;color:#346541;border-radius:999px;font-size:11px;padding:5px 9px;margin:0 0 8px;font-weight:750}
+.note{background:#fff8e7;border-left:4px solid #b89944;padding:12px 15px;border-radius:6px}
+dialog{border:0;border-radius:17px;width:min(650px,calc(100% - 24px));max-height:90dvh;overflow:auto;padding:23px;background:white;color:#243d30;box-shadow:0 22px 70px #0005}
+dialog::backdrop{background:#101c16b5}
+dialog img{max-height:330px;max-width:100%;display:block;margin:12px auto;border-radius:12px;object-fit:contain}
+dl{display:grid;grid-template-columns:115px 1fr;gap:9px 15px;overflow-wrap:anywhere}
+dt{font-size:13px;font-weight:750;color:#647467}dd{margin:0}
+.related{margin:16px 0 5px;padding-top:14px;border-top:1px solid #dce6db}
+.related button{display:block;margin:8px 0;width:100%;text-align:left}
+.close{float:right;border:0;border-radius:50%;background:#eaf1e9;color:#234e3d;font-size:25px;width:40px;height:40px}
+#printSheet{display:none}
+@media(max-width:600px){.top .inner{padding:15px}.top strong{font-size:17px}.top a{font-size:13px}.panel{padding:15px}.bar .action{flex:1 1 100%}}
+@page{size:A4 portrait;margin:15mm 12mm}
+@media print{
+  :root,body{background:white!important;color:#171b19!important;font:10pt Arial,sans-serif}
+  .top,main,dialog{display:none!important}
+  #printSheet{display:block!important}
+  #printSheet h1{font:700 18pt Arial,sans-serif;color:#151c18;margin:0 0 6px}
+  #printSheet .printhead{display:flex;align-items:center;gap:12px;border-bottom:2px solid #263e31;padding-bottom:10px;margin-bottom:12px}
+  #printSheet .printhead img{width:48px;height:48px}
+  #printSheet p{font-size:9pt;margin:7px 0 12px}
+  #printSheet table{min-width:0;table-layout:fixed;width:100%;font-size:9pt}
+  #printSheet th,#printSheet td{padding:6px 7px;border-bottom:1px solid #ccc;font-size:9pt;color:#111}
+  #printSheet tr{break-inside:avoid}
+  #printSheet thead{display:table-header-group;background:#f0f1f0!important}
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="inner"><strong>Jans verkstad · Register & Festool</strong><a href="./">← Verktygsregistret</a></div></header>
+<main>
+  <p class="eyebrow">ÖVERSIKT ÖVER DIN VERKSTAD</p>
+  <h1>Registerlista och Festool-samling</h1>
+  <p class="muted">De här två vyerna hämtar dina uppgifter direkt ur det befintliga verktygsregistret på denna enhet. De ändrar aldrig föremål, bilder eller molnlagring.</p>
+  <div id="status" class="status" role="status" aria-live="polite">Läser verktygsregistret …</div>
+  <nav class="tabs" aria-label="Välj översikt">
+    <button id="openRegister" type="button" aria-selected="true">Registerlista & PDF</button>
+    <button id="openFestool" type="button" aria-selected="false">Min Festool-samling</button>
+  </nav>
+  <section id="registerView" class="panel">
+    <h2 class="sectiontitle">Registerlista för utskrift och PDF</h2>
+    <div class="bar">
+      <label class="field">Visa<select id="scope"><option value="all">Alla föremål</option><option value="festool">Endast Festool</option></select></label>
+      <label class="field">Sortera<select id="sort"><option value="name">Namn A–Ö</option><option value="location">Förvaringsplats A–Ö</option><option value="category">Kategori A–Ö</option></select></label>
+      <label class="field">Sök i listan<input id="registerSearch" type="search" placeholder="Namn, kategori eller plats"></label>
+      <button id="print" type="button" class="action main">Skriv ut / Spara PDF</button>
+    </div>
+    <p id="registerSummary" class="muted"></p>
+    <div class="tablewrap">
+      <table aria-label="Föremål, kategori, förvaringsplats och antal">
+        <thead><tr><th>Föremål</th><th>Kategori</th><th>Plats</th><th>Antal</th></tr></thead>
+        <tbody id="registerRows"></tbody>
+      </table>
+    </div>
+    <p class="muted">Välj ”Skriv ut / Spara PDF”. På iPhone kan du dela utskriften och spara som PDF i Filer.</p>
+  </section>
+  <section id="festoolView" class="panel" hidden>
+    <div class="festool-lead">
+      <b>Min Festool-samling</b>
+      <p>Maskiner, tillbehör, Systainers och manualer – hämtade från ditt ordinarie verktygsregister.</p>
+      <div id="festoolStats" class="summary"></div>
+    </div>
+    <label class="field">Sök Festool-maskin eller tillbehör<input id="festoolSearch" type="search" placeholder="Namn, modell eller förvaringsplats"></label>
+    <div id="festoolFilters" class="filters" aria-label="Filtrera Festool-samlingen"></div>
+    <p id="festoolCount" class="muted"></p>
+    <div id="festoolCards" class="cards"></div>
+  </section>
+  <p class="note"><strong>Viktigt:</strong> Om du öppnar denna sida i Safari kan registret vara tomt där även om det finns i hemskärmsappen. Öppna då sidan via den befintliga Jans verkstad-ikonen, där dina 79 föremål är sparade. Ingen kopiering eller import behövs för dessa vyer.</p>
+</main>
+<dialog id="itemDialog" aria-labelledby="detailTitle">
+  <button type="button" class="close" id="closeDialog" aria-label="Stäng">×</button>
+  <h2 id="detailTitle"></h2>
+  <div id="detailBody"></div>
+</dialog>
+<section id="printSheet" aria-label="Utskriftsversion">
+  <div class="printhead"><img src="./jans-hantverk-256.png" alt=""><div><h1>Jans verkstad</h1><p>Registerlista – föremål och förvaringsplatser</p></div></div>
+  <p id="printMeta"></p>
+  <table><thead><tr><th>Föremål</th><th>Kategori</th><th>Plats</th><th>Antal</th></tr></thead><tbody id="printRows"></tbody></table>
+  <p id="printFooter"></p>
+</section>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const state={items:[],places:[],ready:false,view:new URLSearchParams(location.search).get('vy')==='festool'?'festool':'register',kind:'Alla'};
+const kinds=['Alla','Maskin','Tillbehör','Systainer','Förbrukning','Övrigt'];
+const norm=value=>String(value||'').toLocaleLowerCase('sv').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+function isFestool(item){return norm(item.brand)==='festool'||(!String(item.brand||'').trim()&&norm([item.name,item.keywords].join(' ')).split(' ').includes('festool'));}
+function kind(item){
+ if(kinds.includes(item.itemType)&&item.itemType!=='Alla')return item.itemType;
+ if(item.category==='Tillbehör')return 'Tillbehör';
+ if(item.category==='Förbrukning')return 'Förbrukning';
+ return 'Maskin';
+}
+function safePhoto(item){return typeof item?.photo==='string'&&/^data:image\/(jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(item.photo)?item.photo:null;}
+function safeUrl(value){try{const u=new URL(value);return /^https?:$/.test(u.protocol)?u.href:null;}catch{return null;}}
+function element(tag,textValue,cls){const x=document.createElement(tag);if(textValue!=null)x.textContent=String(textValue);if(cls)x.className=cls;return x;}
+function status(message,error){const x=$('status');x.textContent=message;x.classList.toggle('error',!!error);}
+function showView(view){
+ state.view=view;
+ $('registerView').hidden=view!=='register';$('festoolView').hidden=view!=='festool';
+ $('openRegister').setAttribute('aria-selected',String(view==='register'));$('openFestool').setAttribute('aria-selected',String(view==='festool'));
+ const u=new URL(location.href);u.searchParams.set('vy',view);history.replaceState(null,'',u.href);
+}
+function rows(target,items){
+ const frag=document.createDocumentFragment();
+ for(const it of items){
+  const tr=document.createElement('tr');
+  const vals=[it.name||'',it.category||'Övrigt',it.location||'Ej angiven',Number(it.quantity)||1];
+  vals.forEach(v=>tr.appendChild(element('td',v)));
+  frag.appendChild(tr);
+ }
+ if(!items.length){const tr=document.createElement('tr'),td=element('td','Inga föremål matchar urvalet.');td.colSpan=4;tr.appendChild(td);frag.appendChild(tr);}
+ target.replaceChildren(frag);
+}
+function renderRegister(){
+ const query=norm($('registerSearch').value),scope=$('scope').value,sort=$('sort').value;
+ const terms=query.split(' ').filter(Boolean);
+ const collator=new Intl.Collator('sv',{numeric:true,sensitivity:'base'});
+ const cmp=(a,b)=>collator.compare(String(a||''),String(b||''));
+ const items=state.items.filter(it=>(scope==='all'||isFestool(it))&&terms.every(term=>norm([it.name,it.category,it.location,it.brand,it.model].join(' ')).includes(term))).slice();
+ items.sort((a,b)=>sort==='location'?(cmp(a.location,b.location)||cmp(a.name,b.name)):sort==='category'?(cmp(a.category,b.category)||cmp(a.name,b.name)):(cmp(a.name,b.name)||cmp(a.location,b.location)));
+ rows($('registerRows'),items);rows($('printRows'),items);
+ const places=new Set(items.map(it=>it.location||'')).size;
+ const total=items.reduce((n,it)=>n+(Number(it.quantity)||1),0);
+ const summary=items.length+' föremål · '+places+' platser · '+total+' st totalt';
+ $('registerSummary').textContent=summary;
+ $('printFooter').textContent=summary+' · Registerlista utan bilder';
+ $('printMeta').textContent=new Date().toLocaleDateString('sv-SE',{year:'numeric',month:'long',day:'numeric'})+' · '+(scope==='festool'?'Endast Festool':'Alla föremål')+' · sorterat efter '+(sort==='location'?'förvaringsplats':sort==='category'?'kategori':'namn')+(query?' · sökning: '+$('registerSearch').value.trim():'');
+ $('print').disabled=!state.ready||items.length===0;
+}
+function detail(item){
+ $('detailTitle').textContent=item.name||'Föremål';
+ const target=$('detailBody');target.replaceChildren();
+ const photo=safePhoto(item);
+ if(photo){const img=document.createElement('img');img.src=photo;img.alt=item.name||'';target.appendChild(img);}
+ const dl=document.createElement('dl');
+ const fields=[['Kategori',item.category],['Fabrikat',item.brand||'Festool'],['Modell',item.model],['Typ',kind(item)],['Förvaringsplats',item.location],['Antal',String(Number(item.quantity)||1)+' st'],['Systainer',item.systainer],['Passar till',item.fitsTo],['Serienummer',item.serial],['Inköpsår',item.year],['Service/underhåll',item.service],['Anteckningar',item.notes]];
+ for(const [label,val] of fields)if(val){dl.appendChild(element('dt',label));dl.appendChild(element('dd',val));}
+ target.appendChild(dl);
+ const url=safeUrl(item.manualUrl);
+ if(url){const link=element('a','Öppna manual ↗','action');link.href=url;link.target='_blank';link.rel='noopener noreferrer';target.appendChild(link);}
+ if(kind(item)==='Maskin'){
+  const name=norm(item.model||item.name);
+  const related=state.items.filter(x=>x.id!==item.id&&isFestool(x)&&kind(x)!=='Maskin'&&String(x.fitsTo||'').split(/[,;]+/).some(raw=>{const v=norm(raw);return v&&(v===name||name.includes(v)&&v.length>=5);}));
+  const box=element('div',null,'related');box.appendChild(element('h3','Tillbehör som passar ('+related.length+')'));
+  if(!related.length)box.appendChild(element('p','Inga tillbehör har kopplats till denna maskin ännu.'));
+  for(const accessory of related){const btn=element('button',accessory.name+' · '+(accessory.location||''),'action');btn.type='button';btn.onclick=()=>detail(accessory);box.appendChild(btn);}
+  target.appendChild(box);
+ }
+ if(!$('itemDialog').open)$('itemDialog').showModal();
+}
+function renderFestool(){
+ const all=state.items.filter(isFestool);
+ const counts=[['Registrerade',all.length],['Maskiner',all.filter(x=>kind(x)==='Maskin').length],['Tillbehör',all.filter(x=>kind(x)==='Tillbehör').length],['Systainers',all.filter(x=>kind(x)==='Systainer').length]];
+ $('festoolStats').replaceChildren(...counts.map(([title,count])=>element('span',count+' '+title)));
+ const filters=$('festoolFilters');filters.replaceChildren();
+ for(const t of kinds){const btn=element('button',t==='Maskin'?'Maskiner':t==='Systainer'?'Systainers':t);btn.type='button';btn.setAttribute('aria-pressed',String(state.kind===t));btn.onclick=()=>{state.kind=t;renderFestool()};filters.appendChild(btn);}
+ const q=norm($('festoolSearch').value);
+ const terms=q.split(' ').filter(Boolean);
+ const items=all.filter(it=>(state.kind==='Alla'||kind(it)===state.kind)&&terms.every(t=>norm([it.name,it.model,it.location,it.category,it.fitsTo,it.notes].join(' ')).includes(t)))
+   .sort((a,b)=>(a.name||'').localeCompare(b.name||'','sv',{numeric:true}));
+ $('festoolCount').textContent=items.length+' av '+all.length+' Festool-föremål';
+ const cards=$('festoolCards');cards.replaceChildren();
+ if(!all.length){
+  cards.appendChild(element('p','Inga föremål är markerade med fabrikat Festool i det här lokala registret. Kontrollera fältet Fabrikat i ditt ordinarie register. Inga föremål har ändrats.','muted'));return;
+ }
+ if(!items.length){cards.appendChild(element('p','Inga Festool-föremål matchar ditt urval.','muted'));return;}
+ for(const it of items){
+  const button=element('button',null,'item');button.type='button';button.onclick=()=>detail(it);
+  const media=element('div',null,'photo');const src=safePhoto(it);
+  if(src){const img=new Image();img.src=src;img.alt=it.name||'';img.loading='lazy';media.appendChild(img);}else media.textContent='⌁';
+  const body=element('div',null,'data');body.appendChild(element('span',kind(it),'tag'));body.appendChild(element('strong',it.name));
+  if(it.model)body.appendChild(element('small','Modell: '+it.model));
+  body.appendChild(element('small','Plats: '+(it.location||'Ej angiven')));
+  if(it.systainer)body.appendChild(element('small','Systainer: '+it.systainer));
+  if(it.quantity)body.appendChild(element('small','Antal: '+it.quantity));
+  button.append(media,body);cards.appendChild(button);
+ }
+}
+async function readLocal(){
+ const db=await new Promise((resolve,reject)=>{
+  const req=indexedDB.open('jans-verkstad-mobil');
+  req.onupgradeneeded=()=>{req.transaction.abort();reject(Error('Inget befintligt verktygsregister hittades i den här webbläsaren.'))};
+  req.onsuccess=()=>resolve(req.result);
+  req.onerror=()=>reject(req.error||Error('Verktygsregistret kunde inte öppnas.'));
+ });
+ try{
+  if(!db.objectStoreNames.contains('register'))throw Error('Registerlagringen finns inte på den här enheten.');
+  const data=await new Promise((resolve,reject)=>{
+   const req=db.transaction('register','readonly').objectStore('register').get('data');
+   req.onsuccess=()=>resolve(req.result);
+   req.onerror=()=>reject(req.error||Error('Registret gick inte att läsa.'));
+  });
+  if(!data||!Array.isArray(data.items)||!Array.isArray(data.places))throw Error('Inget lokalt register finns på den här enheten.');
+  return data;
+ }finally{db.close();}
+}
+async function init(){
+ showView(state.view);
+ try{
+  const data=await readLocal();
+  state.items=data.items;state.places=data.places;state.ready=true;
+  status('Lokalt register: '+data.items.length+' föremål och '+data.places.length+' förvaringsplatser. Endast läsning.',false);
+  renderRegister();renderFestool();
+ }catch(err){
+  status(err.message+' Öppna sidan genom din vanliga hemskärmsapp för att läsa just dess register.',true);
+  $('print').disabled=true;
+  renderRegister();renderFestool();
+ }
+}
+$('openRegister').onclick=()=>showView('register');
+$('openFestool').onclick=()=>showView('festool');
+$('scope').onchange=renderRegister;$('sort').onchange=renderRegister;$('registerSearch').oninput=renderRegister;
+$('festoolSearch').oninput=renderFestool;
+$('print').onclick=()=>{if(state.ready){renderRegister();window.print();}};
+$('closeDialog').onclick=()=>$('itemDialog').close();
+$('itemDialog').onclick=e=>{if(e.target===$('itemDialog'))$('itemDialog').close()};
+init();
+})();
+</script>
+</body>
+</html>
