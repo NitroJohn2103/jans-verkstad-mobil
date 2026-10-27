@@ -106,6 +106,7 @@ async function details(id){
  '</div><a class="button secondary" href="'+esc(url)+'" target="_blank" rel="noopener" download="'+esc(f.name)+'">Öppna / hämta</a><button type="button" class="danger remove-file" data-id="'+esc(f.id)+'" aria-label="Ta bort fil '+esc(f.name)+'">×</button></li>';
  }).join('')+'</ul>':'<p class="muted">Inga filer ännu. Välj Redigera för att lägga till.</p>';
  $('detailsBody').innerHTML=h;
+ $('deleteProject').textContent=window.JansProjectAutoSync&&window.JansProjectAutoSync.enabled()?'Ta bort på alla enheter':'Ta bort lokalt';
  if(!$('details').open)$('details').showModal();
  }catch(e){message('Kunde inte öppna projekt: '+e.message,true)}
 }
