@@ -132,12 +132,24 @@ async function removeFile(id){
  try{await transaction('files','readwrite',function(t){t.objectStore('files').delete(id)});await details(current.id);await render();message('Filen är borttagen.');if(window.JansProjectAutoSync)window.JansProjectAutoSync.changed()}catch(e){message(e.message,true)}
 }
 async function deleteProject(){
- if(!current||!confirm('Vill du verkligen ta bort projektet och alla dess PDF- och bildfiler?'))return;
+ if(!current)return;
+ var b=$('deleteProject');if(b.disabled)return;b.disabled=true;
  try{
- var id=current.id,files=await byProject(id);
- await transaction(['projects','files'],'readwrite',function(t){t.objectStore('projects').delete(id);files.forEach(function(f){t.objectStore('files').delete(f.id)})});
- $('details').close();current=null;freeUrls();await render();message('Projektet har tagits bort.');if(window.JansProjectAutoSync)window.JansProjectAutoSync.changed();
- }catch(e){message(e.message,true)}
+  var id=current.id,auto=window.JansProjectAutoSync;
+  if(auto&&auto.enabled()){
+   var confirmed=await auto.deleteProject(id);
+   if(!confirmed)return;
+   $('details').close();current=null;freeUrls();await render();
+   message('Projektet är borttaget på den här enheten och i molnet. Andra enheter uppdateras när de synkroniserar.');
+   auto.changed();return;
+  }
+  if(!confirm('Ta bort projektet och alla bilagor endast på den här enheten? Borttagningen synkroniseras inte automatiskt och kan behöva hanteras manuellt när du aktiverar molnsynkronisering.'))return;
+  var files=await byProject(id);
+  await transaction(['projects','files'],'readwrite',function(t){t.objectStore('projects').delete(id);files.forEach(function(f){t.objectStore('files').delete(f.id)})});
+  $('details').close();current=null;freeUrls();await render();
+  message('Projektet är borttaget lokalt, men inte från molnet.');
+ }catch(e){message('Borttagningen stoppades: '+e.message,true)}
+ finally{b.disabled=false}
 }
 function base64(blob){return new Promise(function(resolve,reject){var r=new FileReader;r.onload=function(){resolve(String(r.result).split(',')[1])};r.onerror=function(){reject(r.error)};r.readAsDataURL(blob)})}
 function from64(s,type){var bin=atob(s),arr=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);return new Blob([arr],{type:type||'application/octet-stream'})}
