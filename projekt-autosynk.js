@@ -326,7 +326,10 @@
         throw Error('Projektet finns inte i båda registren. Ingenting har raderats.');
       const attachments = local.files.filter(f => f.projectId === projectId);
       if (!confirm('Ta bort ”' + project.title + '” och ' + attachments.length +
-        ' bilagor från alla anslutna enheter?\nÄldre säkerhetskopior behålls.')) return false;
+        ' bilagor från alla anslutna enheter?\nÄldre säkerhetskopior behålls.')) {
+        status('Ingen borttagning gjordes. Projekten är oförändrade.', 'good');
+        return false;
+      }
       const next = {projects: cloud.projects.filter(p => p.id !== projectId),
         files: cloud.files.filter(f => f.projectId !== projectId)};
       const removals = {projects: {...cloud.removals.projects, [projectId]: rh.projects[projectId]},
