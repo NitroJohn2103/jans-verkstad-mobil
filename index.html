@@ -1,4 +1,19 @@
-<!doctype html><html lang="sv"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#234e3d"><meta name="description" content="Verktyg, foton och förvaringsplatser – samlade i din telefon."><link rel="manifest" href="./manifest.webmanifest?v=20261027b"><link rel="apple-touch-icon" sizes="256x256" href="./jans-hantverk-256.png?v=20261027b"><link rel="icon" type="image/png" sizes="256x256" href="./jans-hantverk-256.png?v=20261027b"><link rel="icon" href="./icon.svg"><title>Jans verkstad</title>  <script type="module" crossorigin src="./app-projekt-detailed-v2.js"></script>
+<!doctype html><html lang="sv"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#234e3d"><meta name="description" content="Verktyg, foton och förvaringsplatser – samlade i din telefon."><link rel="manifest" href="./manifest.webmanifest?v=20261027b"><link rel="apple-touch-icon" sizes="256x256" href="./jans-hantverk-256.png?v=20261027b"><link rel="icon" type="image/png" sizes="256x256" href="./jans-hantverk-256.png?v=20261027b"><link rel="icon" href="./icon.svg"><title>Jans verkstad</title>  <script>
+/* Auto-fill public Supabase connection for a new Mac/device.
+   The publishable key is intended for browser clients; never store secrets here.
+   Existing saved connections, identities, registers and photos stay untouched. */
+(function () {
+  try {
+    var setting = 'jans-verkstad-supabase-v1';
+    if (localStorage.getItem(setting) !== null) return;
+    localStorage.setItem(setting, JSON.stringify({
+      url: "https://wmapoqagfuxrffbvzzfh.supabase.co",
+      key: "sb_publishable_jeIVlmdERnKjA434L6icsQ_cbpBuhwO"
+    }));
+  } catch (_) {}
+})();
+</script>
+  <script type="module" crossorigin src="./app-projekt-detailed-v2.js"></script>
   <link rel="stylesheet" crossorigin href="./index-D-qwewMk.css">
 </head><body><div id="root"></div><style>
 /* Projektnavigering; den befintliga registerappen och dess lagring ändras inte. */
