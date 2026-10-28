@@ -40,7 +40,7 @@ dialog::backdrop{background:#101c14a9}.formrow{display:grid;grid-template-column
 <section class="intro"><p class="eyebrow">IDÉER TILL FRAMTIDA BYGGEN</p><h1>Projekt & ritningar</h1><p class="muted">Spara skärmdumpar, bilder, PDF-ritningar, webblänkar och egna idéer. Hitta tillbaka när du vill börja bygga.</p></section>
 <div class="toolbar"><input id="search" type="search" placeholder="Sök projekt, material eller anteckning…" aria-label="Sök projekt"><select id="filter" aria-label="Filtrera status"><option value="">Alla statusar</option><option>Idé</option><option>Planerat</option><option>Pågående</option><option>Färdigt</option></select><button class="primary" id="add">＋ Nytt projekt</button></div>
 <p class="muted" id="count">Läser projekt …</p><section class="cards" id="cards" aria-label="Projekt"></section>
-<section class="panel"><h2>Automatisk molnsynkronisering</h2><p id="autoSyncStatus" class="muted" role="status" aria-live="polite">Synkroniseringen är inte aktiverad ännu.</p><p class="muted">Aktivera separat på iPhone och Mac när du vill börja. Då synkroniseras projekt och bilagor när sidan används och internet finns. Vid motstridiga ändringar stoppas synkroniseringen i stället för att skriva över uppgifter. Borttagningar synkroniseras inte automatiskt.</p><button class="primary" id="autoSyncToggle" type="button">Aktivera automatisk synkronisering</button><button class="secondary" id="autoSyncCheck" type="button">Kontrollera synkronisering nu</button></section>
+<section class="panel"><h2>Automatisk molnsynkronisering</h2><p id="autoSyncStatus" class="muted" role="status" aria-live="polite">Synkroniseringen är inte aktiverad ännu.</p><p class="muted">Aktivera separat på iPhone och Mac när du vill börja. Då synkroniseras projekt och bilagor när sidan används och internet finns. Vid motstridiga ändringar stoppas synkroniseringen i stället för att skriva över uppgifter. Borttagningar görs inte automatiskt. När synkronisering är aktiv kan du välja Ta bort på alla enheter för ett helt projekt och bekräfta borttagningen.</p><button class="primary" id="autoSyncToggle" type="button">Aktivera automatisk synkronisering</button><button class="secondary" id="autoSyncCheck" type="button">Kontrollera synkronisering nu</button></section>
 <section class="panel"><h2>Molnkopior för Projekt & ritningar</h2><p>Behåll möjligheten att skapa och hämta separata, tidsstämplade molnkopior vid behov. Automatisk synkronisering visas ovan.</p><a class="button secondary" href="./projekt-moln.html">Öppna säker molnkopiering →</a></section>
 <section class="panel"><h2>Säkerhetskopiering</h2><p class="note"><b>Viktigt:</b> Projekten sparas lokalt och synkroniseras separat via ditt molnkonto när inloggning och internet fungerar. Gör ändå en regelbunden säkerhetskopia. Verktygsregistrets egna molnlagring påverkas inte.</p><div class="toolbar"><button id="backup" class="secondary" type="button">↓ Exportera projekt med filer</button><button id="importProjects" class="secondary" type="button">↑ Importera projekt</button><input id="restore" type="file" accept=".json,application/json" style="display:none" aria-label="Välj projektsäkerhetskopia att importera"></div><small>Projektens säkerhetskopia är separat från säkerhetskopian för verktygsregistret. Vid import behålls redan sparade projekt.</small><p id="message" class="notice" role="status"></p></section>
 </main>
@@ -106,6 +106,7 @@ async function details(id){
  '</div><a class="button secondary" href="'+esc(url)+'" target="_blank" rel="noopener" download="'+esc(f.name)+'">Öppna / hämta</a><button type="button" class="danger remove-file" data-id="'+esc(f.id)+'" aria-label="Ta bort fil '+esc(f.name)+'">×</button></li>';
  }).join('')+'</ul>':'<p class="muted">Inga filer ännu. Välj Redigera för att lägga till.</p>';
  $('detailsBody').innerHTML=h;
+ $('deleteProject').textContent=window.JansProjectAutoSync&&window.JansProjectAutoSync.enabled()?'Ta bort på alla enheter':'Ta bort lokalt';
  if(!$('details').open)$('details').showModal();
  }catch(e){message('Kunde inte öppna projekt: '+e.message,true)}
 }
@@ -132,12 +133,24 @@ async function removeFile(id){
  try{await transaction('files','readwrite',function(t){t.objectStore('files').delete(id)});await details(current.id);await render();message('Filen är borttagen.');if(window.JansProjectAutoSync)window.JansProjectAutoSync.changed()}catch(e){message(e.message,true)}
 }
 async function deleteProject(){
- if(!current||!confirm('Vill du verkligen ta bort projektet och alla dess PDF- och bildfiler?'))return;
+ if(!current)return;
+ var b=$('deleteProject');if(b.disabled)return;b.disabled=true;
  try{
- var id=current.id,files=await byProject(id);
- await transaction(['projects','files'],'readwrite',function(t){t.objectStore('projects').delete(id);files.forEach(function(f){t.objectStore('files').delete(f.id)})});
- $('details').close();current=null;freeUrls();await render();message('Projektet har tagits bort.');if(window.JansProjectAutoSync)window.JansProjectAutoSync.changed();
- }catch(e){message(e.message,true)}
+  var id=current.id,auto=window.JansProjectAutoSync;
+  if(auto&&auto.enabled()){
+   var confirmed=await auto.deleteProject(id);
+   if(!confirmed)return;
+   $('details').close();current=null;freeUrls();await render();
+   message('Projektet är borttaget på den här enheten och i molnet. Andra enheter uppdateras när de synkroniserar.');
+   auto.changed();return;
+  }
+  if(!confirm('Ta bort projektet och alla bilagor endast på den här enheten? Borttagningen synkroniseras inte automatiskt och kan behöva hanteras manuellt när du aktiverar molnsynkronisering.'))return;
+  var files=await byProject(id);
+  await transaction(['projects','files'],'readwrite',function(t){t.objectStore('projects').delete(id);files.forEach(function(f){t.objectStore('files').delete(f.id)})});
+  $('details').close();current=null;freeUrls();await render();
+  message('Projektet är borttaget lokalt, men inte från molnet.');
+ }catch(e){message('Borttagningen stoppades: '+e.message,true)}
+ finally{b.disabled=false}
 }
 function base64(blob){return new Promise(function(resolve,reject){var r=new FileReader;r.onload=function(){resolve(String(r.result).split(',')[1])};r.onerror=function(){reject(r.error)};r.readAsDataURL(blob)})}
 function from64(s,type){var bin=atob(s),arr=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);return new Blob([arr],{type:type||'application/octet-stream'})}
